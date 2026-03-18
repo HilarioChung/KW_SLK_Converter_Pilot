@@ -198,6 +198,8 @@
     transition: all .2s; box-shadow: var(--shadow-sm);
   }
   .btn-copy:hover { background: var(--kw-yellow-dark); box-shadow: var(--shadow-md); color: #fff; }
+  .btn-maker { background: var(--slack-purple); color: #fff; }
+  .btn-maker:hover { background: var(--slack-purple-light); color: #fff; }
 
   /* ─── Warnings Panel ─── */
   .warnings-panel { flex: 1; overflow-y: auto; padding: 12px; }
@@ -346,7 +348,7 @@
       <div class="json-actions">
         <button class="btn-copy" onclick="applyJsonEdit()" title="수정한 JSON을 미리보기에 반영">✏️ 수정 적용</button>
         <button class="btn-copy" onclick="copyJSON()">📋 복사</button>
-        <button class="btn-copy" style="background:var(--slack-purple);color:#fff" onclick="sendToMaker()">🔧 블럭킷 메이커로 보내기</button>
+        <button class="btn-copy btn-maker" onclick="sendToMaker()">🔧 블럭킷 메이커로 보내기</button>
       </div>
     </div>
 
@@ -391,7 +393,7 @@
 <!-- Footer -->
 <footer class="app-footer">
   <div class="footer-note">본 서비스는 prototype이며, 변환 후 테스트 발송을 권장합니다.</div>
-  <div class="footer-version">2026.03.18.15:58</div>
+  <div class="footer-version">2026.03.18.15:58 (Hilario)</div>
 </footer>
 
 <div class="toast" id="toast"></div>
