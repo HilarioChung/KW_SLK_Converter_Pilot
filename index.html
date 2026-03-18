@@ -409,6 +409,10 @@ function convertBlocks(slackBlocks) {
   }
 
   for (const block of slackBlocks) {
+    if (!block || typeof block !== 'object') {
+      warnings.push({ type: 'warn', msg: '유효하지 않은 블록이 무시되었습니다.' });
+      continue;
+    }
     const converted = convertBlock(block);
     if (converted) {
       if (Array.isArray(converted)) result.push(...converted);
@@ -456,11 +460,11 @@ function convertBlock(b) {
       const results = [];
       // fields → description 배열
       if (b.fields && b.fields.length > 0) {
+        if (b.text) warnings.push({ type: 'info', msg: 'section에 fields와 text가 동시에 있어 text는 fields 뒤에 추가됩니다.' });
         for (const f of b.fields) {
           const raw = extractText(f);
           const match = raw.match(/^(.+?)[\n\r]+(.+)$/s);
           if (match) {
-            // "Label:\nValue" 패턴
             const term = match[1].replace(/:$/, '').trim();
             const content = match[2].trim();
             results.push({ type: 'description', term, content: { type: 'text', text: content }, accent: true });
@@ -468,6 +472,7 @@ function convertBlock(b) {
             results.push({ type: 'text', text: raw });
           }
         }
+        if (b.text) results.push({ type: 'text', text: extractText(b.text) });
         return results;
       }
       // section with accessory image
@@ -599,10 +604,24 @@ function convert() {
     return;
   }
 
+  // attachments 레거시 형식 감지
+  if (!parsed.blocks && parsed.attachments) {
+    warnings = [{ type: 'error', msg: '이 메시지는 Slack Legacy Attachments 형식입니다. Block Kit 형식만 지원됩니다. Slack 앱 설정에서 Block Kit으로 전환하세요.' }];
+    kwBlocks = [];
+    renderAll();
+    toast('Legacy Attachments 형식은 지원되지 않습니다.');
+    return;
+  }
+
   const slackBlocks = parsed.blocks || parsed;
   if (!Array.isArray(slackBlocks) && parsed.blocks === undefined) {
     toast('blocks 배열을 찾을 수 없습니다.');
     return;
+  }
+
+  // 최상위 text 필드 감지 (Slack fallback text)
+  if (parsed.text && parsed.blocks) {
+    warnings.push({ type: 'info', msg: `Slack fallback text "${parsed.text.substring(0, 50)}${parsed.text.length > 50 ? '...' : ''}" 는 변환에 포함되지 않습니다 (blocks만 변환).` });
   }
 
   kwBlocks = convertBlocks(Array.isArray(slackBlocks) ? slackBlocks : []);
@@ -778,6 +797,31 @@ function copyCurl(el) {
   else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('복사되었습니다! 📋'); }
 }
 
+function cleanForAPI(blocks) {
+  return blocks.map(b => {
+    switch (b.type) {
+      case 'header':      return { type: 'header', text: b.text, style: b.style };
+      case 'text':        return { type: 'text', text: b.text };
+      case 'image_link':  return { type: 'image_link', url: b.url };
+      case 'divider':     return { type: 'divider' };
+      case 'button':      return { type: 'button', text: b.text, style: b.style, action: b.action };
+      case 'action':      return { type: 'action', elements: (b.elements||[]).map(el => ({ type: 'button', text: el.text, style: el.style, action: el.action })) };
+      case 'description': return { type: 'description', term: b.term, content: b.content };
+      case 'section': {
+        const out = { type: 'section', content: b.content };
+        if (b.accessory) out.accessory = b.accessory;
+        return out;
+      }
+      case 'context': {
+        const out = { type: 'context', content: b.content };
+        if (b.image) out.image = b.image;
+        return out;
+      }
+      default: return b;
+    }
+  });
+}
+
 function generateSendGuide() {
   const appKey = document.getElementById('sendAppKey').value.trim();
   const rawEmails = document.getElementById('sendEmail').value.trim();
@@ -801,7 +845,7 @@ function generateSendGuide() {
 
   let cmdBoxes;
   if (emails.length === 1) {
-    const payload = { email: emails[0], text: notifText, blocks: kwBlocks };
+    const payload = { email: emails[0], text: notifText, blocks: cleanForAPI(kwBlocks) };
     const payloadJson = JSON.stringify(payload, null, 2);
     const cmd = `# 페이로드 파일 저장
 cat > /tmp/kw_message.json << 'PAYLOAD'
@@ -817,7 +861,7 @@ curl -s -X POST \\
     cmdBoxes = curlBox('전송 명령어 (1단계로 완료)', cmd);
   } else {
     // 복수 수신자: 배치 스크립트
-    const tmplPayload = { email: '__EMAIL__', text: notifText, blocks: kwBlocks };
+    const tmplPayload = { email: '__EMAIL__', text: notifText, blocks: cleanForAPI(kwBlocks) };
     const tmplJson = JSON.stringify(tmplPayload, null, 2);
     const emailList = emails.map(e => `"${e}"`).join(' ');
     const script = `# 페이로드 템플릿 저장
@@ -877,9 +921,10 @@ function toast(msg) {
 // INIT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function init() {
-  document.getElementById('presetBar').innerHTML = PRESETS.map((p, i) =>
-    `<button class="preset-btn" onclick="loadPreset(${i})">${p.emoji} ${p.name}</button>`
-  ).join('');
+  const featured = new Set([0, 2, 3]); // 추천에 이미 표시된 인덱스
+  document.getElementById('presetBar').innerHTML = PRESETS
+    .map((p, i) => featured.has(i) ? '' : `<button class="preset-btn" onclick="loadPreset(${i})">${p.emoji} ${p.name}</button>`)
+    .join('');
   loadSendKey();
 }
 
