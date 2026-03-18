@@ -157,6 +157,45 @@
     color: #fff; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle;
   }
 
+  /* ─── Send Panel ─── */
+  .send-panel { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .send-section { display: flex; flex-direction: column; gap: 6px; }
+  .send-section-title {
+    font-size: 11px; font-weight: 800; color: var(--kw-gray4);
+    letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .send-key-row { display: flex; gap: 6px; }
+  .send-key-row .fi { flex: 1; }
+  .fi {
+    padding: 8px 10px; border: 1px solid var(--kw-border); border-radius: 6px;
+    font-size: 13px; background: #fff; color: var(--kw-ink);
+  }
+  .fi:focus { outline: none; border-color: var(--kw-yellow); }
+  .btn-eye {
+    padding: 0 10px; background: var(--kw-gray1); border: 1px solid var(--kw-border);
+    border-radius: 7px; cursor: pointer; font-size: 14px; color: #555;
+  }
+  .btn-eye:hover { background: var(--kw-gray2); }
+  .send-hint { font-size: 11px; color: var(--kw-gray4); line-height: 1.5; }
+  .send-divider { height: 1px; background: var(--kw-border); }
+  .btn-send {
+    padding: 10px; border: none; border-radius: 8px; background: var(--kw-yellow);
+    color: var(--kw-dark); font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn-send:hover { background: #e6b800; }
+  .btn-send:active { transform: scale(0.98); }
+  .send-result { display: none; flex-direction: column; gap: 10px; }
+  .send-result.visible { display: flex; }
+  .send-status { padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; line-height: 1.5; }
+  .send-status.info { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+  .curl-step-label { font-size: 11px; font-weight: 700; color: var(--kw-gray4); margin-bottom: 4px; margin-top: 8px; }
+  .curl-code {
+    background: #1E1E1E; color: #D4D4D4; padding: 12px; border-radius: 6px;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-all; cursor: pointer;
+  }
+  .curl-code:hover { background: #2D2D2D; }
+
   .hidden { display: none !important; }
 
   /* ─── Toast ─── */
@@ -204,6 +243,7 @@
     <div class="tabs">
       <div class="tab active" id="tab-preview" onclick="switchTab('preview')">미리보기</div>
       <div class="tab" id="tab-json" onclick="switchTab('json')">KW JSON</div>
+      <div class="tab" id="tab-send" onclick="switchTab('send')">테스트 발송</div>
       <div class="tab" id="tab-warnings" onclick="switchTab('warnings')">경고 <span class="warn-count hidden" id="warnCount">0</span></div>
     </div>
 
@@ -228,6 +268,37 @@
       <div class="json-actions">
         <button class="btn-copy" onclick="copyJSON()">📋 KW JSON 복사</button>
       </div>
+    </div>
+
+    <!-- Send -->
+    <div class="send-panel hidden" id="panel-send">
+      <div class="send-section">
+        <div class="send-section-title">🔑 App Key (봇 API 키)</div>
+        <div class="send-key-row">
+          <input class="fi" id="sendAppKey" type="password" placeholder="발급받은 App Key를 입력하세요"
+            oninput="saveSendKey()">
+          <button class="btn-eye" id="btnEye" onclick="toggleKeyVis()" title="보기/숨기기">👁</button>
+          <button class="btn-eye" onclick="clearSendKey()" title="저장된 키 삭제">🗑</button>
+        </div>
+        <div class="send-hint">
+          카카오워크 관리자 페이지 → 봇 관리 → 앱 정보에서 확인.<br>
+          입력한 키는 이 브라우저에만 저장됩니다 (localStorage).
+        </div>
+      </div>
+      <div class="send-divider"></div>
+      <div class="send-section">
+        <div class="send-section-title">📝 알림 텍스트</div>
+        <input class="fi" id="sendNotifText" type="text" placeholder="알림 텍스트 (예: 새 메시지)" value="Slack→KW 변환 테스트">
+      </div>
+      <div class="send-divider"></div>
+      <div class="send-section">
+        <div class="send-section-title">📨 수신자</div>
+        <input class="fi" id="sendEmail" type="text" placeholder="예: user1@company.com, user2@company.com">
+        <div class="send-hint">카카오워크 <strong>가입 시 인증한 이메일</strong>을 입력하세요. 쉼표(,)로 구분하면 여러 명에게 발송됩니다.</div>
+      </div>
+      <div class="send-divider"></div>
+      <button class="btn-send" onclick="generateSendGuide()">📋 전송 가이드 생성하기</button>
+      <div class="send-result" id="sendResult"></div>
     </div>
 
     <!-- Warnings -->
@@ -642,10 +713,141 @@ function renderWarnings() {
 // TABS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function switchTab(tab) {
-  ['preview','json','warnings'].forEach(t => {
+  ['preview','json','send','warnings'].forEach(t => {
     document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
     document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
   });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TEST SEND PANEL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const KW_API = 'https://api.kakaowork.com/v1';
+
+function saveSendKey() {
+  const v = document.getElementById('sendAppKey').value;
+  if (v) localStorage.setItem('s2kw_app_key', v);
+  else   localStorage.removeItem('s2kw_app_key');
+}
+function loadSendKey() {
+  const k = localStorage.getItem('s2kw_app_key');
+  if (k) document.getElementById('sendAppKey').value = k;
+}
+function toggleKeyVis() {
+  const inp = document.getElementById('sendAppKey');
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  document.getElementById('btnEye').textContent = isHidden ? '🙈' : '👁';
+}
+function clearSendKey() {
+  const inp = document.getElementById('sendAppKey');
+  inp.value = '';
+  inp.type = 'password';
+  document.getElementById('btnEye').textContent = '👁';
+  localStorage.removeItem('s2kw_app_key');
+  toast('App Key가 삭제되었습니다.');
+}
+
+function setSendResult(html) {
+  const el = document.getElementById('sendResult');
+  el.innerHTML = html;
+  el.classList.toggle('visible', !!html);
+}
+
+function curlBox(label, cmd) {
+  const safe = cmd.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<div>
+    <div class="curl-step-label">${label}</div>
+    <div class="curl-code" onclick="copyCurl(this)" title="클릭하여 복사">${safe}</div>
+  </div>`;
+}
+function copyCurl(el) {
+  const text = el.textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('명령어가 복사되었습니다! 📋'));
+  else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('복사되었습니다! 📋'); }
+}
+
+function generateSendGuide() {
+  const appKey = document.getElementById('sendAppKey').value.trim();
+  const rawEmails = document.getElementById('sendEmail').value.trim();
+  const notifText = document.getElementById('sendNotifText').value.trim() || '새 메시지';
+
+  if (!appKey) { toast('App Key를 입력해주세요.'); return; }
+  if (!rawEmails) { toast('수신자 이메일을 입력해주세요.'); return; }
+  if (kwBlocks.length === 0) { toast('먼저 Slack JSON을 변환해주세요.'); return; }
+
+  const emails = rawEmails.split(',').map(e => e.trim()).filter(Boolean);
+  if (emails.length === 0) { toast('유효한 이메일을 입력해주세요.'); return; }
+  const invalid = emails.filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+  if (invalid.length) { toast(`올바르지 않은 이메일: ${invalid[0]}`); return; }
+
+  // 빈 이미지 URL 경고
+  const emptyImgCount = kwBlocks.filter(b => b.type === 'image_link' && !b.url).length;
+  const emptyImgWarning = emptyImgCount > 0 ? `
+    <div class="send-status" style="background:#FFF0F0;color:#8B1A1A;border:1px solid #F5A0A0;border-radius:8px;padding:10px 12px;font-size:12px;margin-top:2px;">
+      ⚠️ <strong>이미지 주의</strong>: 이미지 블럭 ${emptyImgCount}개에 URL이 없습니다.
+    </div>` : '';
+
+  let cmdBoxes;
+  if (emails.length === 1) {
+    const payload = { email: emails[0], text: notifText, blocks: kwBlocks };
+    const payloadJson = JSON.stringify(payload, null, 2);
+    const cmd = `# 페이로드 파일 저장
+cat > /tmp/kw_message.json << 'PAYLOAD'
+${payloadJson}
+PAYLOAD
+
+# 전송
+curl -s -X POST \\
+  "${KW_API}/messages.send_by_email" \\
+  -H "Authorization: Bearer ${appKey}" \\
+  -H "Content-Type: application/json" \\
+  -d @/tmp/kw_message.json`;
+    cmdBoxes = curlBox('전송 명령어 (1단계로 완료)', cmd);
+  } else {
+    // 복수 수신자: 배치 스크립트
+    const tmplPayload = { email: '__EMAIL__', text: notifText, blocks: kwBlocks };
+    const tmplJson = JSON.stringify(tmplPayload, null, 2);
+    const emailList = emails.map(e => `"${e}"`).join(' ');
+    const script = `# 페이로드 템플릿 저장
+cat > /tmp/kw_template.json << 'PAYLOAD'
+${tmplJson}
+PAYLOAD
+
+# ${emails.length}명 일괄 전송
+EMAILS=(${emailList})
+for EMAIL in "\${EMAILS[@]}"; do
+  sed "s|__EMAIL__|$EMAIL|" /tmp/kw_template.json > /tmp/kw_payload.json
+  echo "→ $EMAIL 전송 중..."
+  RESULT=$(curl -s -X POST \\
+    "${KW_API}/messages.send_by_email" \\
+    -H "Authorization: Bearer ${appKey}" \\
+    -H "Content-Type: application/json" \\
+    -d @/tmp/kw_payload.json)
+  echo "  $RESULT"
+  sleep 0.5
+done
+echo "✅ 전송 완료 (\${#EMAILS[@]}명)"`;
+    cmdBoxes = curlBox(`전송 스크립트 (${emails.length}명 일괄)`, script);
+  }
+
+  setSendResult(`
+    <div class="send-status info">
+      ℹ️ KakaoWork Bot API는 서버 환경 전용입니다 (브라우저 CORS 미지원).<br>
+      아래 명령어를 <strong>터미널</strong>에서 실행하세요.
+      ${emails.length > 1 ? `<br>수신자 <strong>${emails.length}명</strong> — 한 번에 복사해서 붙여넣기하세요.` : ''}
+    </div>
+    <div class="send-status" style="background:#FFF8E0;color:#6B5900;border:1px solid #F5D660;border-radius:8px;padding:10px 12px;font-size:12px;margin-top:2px;">
+      ⚠️ <strong>이메일 주의</strong>: 카카오워크 <strong>가입 시 인증한 이메일</strong>만 유효합니다.
+    </div>
+    ${emptyImgWarning}
+    <div style="margin-top:8px">${cmdBoxes}</div>
+    <div class="send-hint" style="margin-top:6px">
+      💡 명령어 블록을 클릭하면 클립보드에 복사됩니다.<br>
+      변환된 KW 블럭킷이 카카오워크에서 정상 렌더링되는지 확인해보세요.
+    </div>
+  `);
+  toast('전송 가이드가 생성되었습니다!');
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -667,6 +869,7 @@ function init() {
   document.getElementById('presetBar').innerHTML = PRESETS.map((p, i) =>
     `<button class="preset-btn" onclick="loadPreset(${i})">${p.emoji} ${p.name}</button>`
   ).join('');
+  loadSendKey();
 }
 
 function loadPreset(idx) {
