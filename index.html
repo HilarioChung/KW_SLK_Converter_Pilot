@@ -294,9 +294,11 @@
 
     <!-- JSON -->
     <div class="json-panel hidden" id="panel-json">
-      <textarea class="json-output" id="jsonOut" readonly spellcheck="false"></textarea>
+      <textarea class="json-output" id="jsonOut" spellcheck="false" placeholder="변환 후 여기서 직접 수정할 수 있습니다."></textarea>
       <div class="json-actions">
-        <button class="btn-copy" onclick="copyJSON()">📋 KW JSON 복사</button>
+        <button class="btn-copy" onclick="applyJsonEdit()" title="수정한 JSON을 미리보기에 반영">✏️ 수정 적용</button>
+        <button class="btn-copy" onclick="copyJSON()">📋 복사</button>
+        <button class="btn-copy" style="background:var(--slack-purple);color:#fff" onclick="sendToMaker()">🔧 블럭킷 메이커로 보내기</button>
       </div>
     </div>
 
@@ -819,6 +821,38 @@ function copyJSON() {
     document.body.appendChild(ta); ta.select(); document.execCommand('copy');
     document.body.removeChild(ta); toast('복사되었습니다! 📋');
   });
+}
+
+function applyJsonEdit() {
+  const json = document.getElementById('jsonOut').value.trim();
+  if (!json) { toast('JSON이 비어있습니다.'); return; }
+  try {
+    const parsed = JSON.parse(json);
+    const blocks = parsed.blocks || parsed;
+    if (!Array.isArray(blocks)) { toast('blocks 배열을 찾을 수 없습니다.'); return; }
+    kwBlocks = blocks;
+    renderPreview();
+    toast('수정 내용이 미리보기에 반영되었습니다! ✏️');
+  } catch (e) {
+    toast(`JSON 파싱 오류: ${e.message}`);
+  }
+}
+
+const MAKER_URL = 'https://hilariochung.github.io/KW_blockit_maker_pilot/';
+
+function sendToMaker() {
+  const json = document.getElementById('jsonOut').value.trim();
+  if (!json) { toast('변환할 JSON이 없습니다.'); return; }
+  try {
+    const parsed = JSON.parse(json);
+    const blocks = parsed.blocks || parsed;
+    if (!Array.isArray(blocks)) { toast('blocks 배열을 찾을 수 없습니다.'); return; }
+    localStorage.setItem('kw_import_blocks', JSON.stringify(blocks));
+    window.open(MAKER_URL, '_blank');
+    toast('블럭킷 메이커로 전송했습니다! 🔧');
+  } catch (e) {
+    toast(`JSON 오류: ${e.message}`);
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
