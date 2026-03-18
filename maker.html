@@ -804,7 +804,7 @@
 <!-- Footer -->
 <footer style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#1A1A1A;color:rgba(255,255,255,.45);font-size:11px;flex-shrink:0">
   <div>본 서비스는 prototype이며, 변환 후 테스트 발송을 권장합니다.</div>
-  <div style="font-family:'SF Mono',monospace;font-size:10px;color:rgba(255,255,255,.3)">2026.03.18.15:58 (Hilario)</div>
+  <div id="footerVersion" style="font-family:'SF Mono',monospace;font-size:10px;color:rgba(255,255,255,.3)">loading... (Hilario)</div>
 </footer>
 
 <!-- Toast -->
@@ -1950,6 +1950,19 @@ function init() {
   }
 
   syncAll();
+
+  // Footer commit date
+  const fv = document.getElementById('footerVersion');
+  fetch('https://api.github.com/repos/HilarioChung/KW_SLK_Converter_Pilot/commits?per_page=1')
+    .then(r => r.json())
+    .then(data => {
+      if (data[0]?.commit?.committer?.date) {
+        const d = new Date(data[0].commit.committer.date);
+        const pad = n => String(n).padStart(2, '0');
+        fv.textContent = `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}.${pad(d.getHours())}:${pad(d.getMinutes())} (Hilario)`;
+      }
+    })
+    .catch(() => { fv.textContent = 'offline (Hilario)'; });
 }
 
 init();

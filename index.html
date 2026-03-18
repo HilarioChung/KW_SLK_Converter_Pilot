@@ -393,7 +393,7 @@
 <!-- Footer -->
 <footer class="app-footer">
   <div class="footer-note">본 서비스는 prototype이며, 변환 후 테스트 발송을 권장합니다.</div>
-  <div class="footer-version">2026.03.18.15:58 (Hilario)</div>
+  <div class="footer-version" id="footerVersion">loading... (Hilario)</div>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -1185,6 +1185,21 @@ function init() {
   ).join('');
 
   loadSendKey();
+  loadCommitDate();
+}
+
+function loadCommitDate() {
+  const el = document.getElementById('footerVersion');
+  fetch('https://api.github.com/repos/HilarioChung/KW_SLK_Converter_Pilot/commits?per_page=1')
+    .then(r => r.json())
+    .then(data => {
+      if (data[0]?.commit?.committer?.date) {
+        const d = new Date(data[0].commit.committer.date);
+        const pad = n => String(n).padStart(2, '0');
+        el.textContent = `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}.${pad(d.getHours())}:${pad(d.getMinutes())} (Hilario)`;
+      }
+    })
+    .catch(() => { el.textContent = 'offline (Hilario)'; });
 }
 
 function selectBot(idx) {
