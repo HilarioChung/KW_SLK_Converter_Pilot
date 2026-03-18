@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slack → KakaoWork Converter</title>
+<style>
+  :root {
+    --kw-yellow: #F5C51C; --kw-dark: #1A1A1A; --kw-ink: #2D2D2D;
+    --kw-gray1: #F5F5F5; --kw-gray2: #E8E8E8; --kw-gray3: #BDBDBD; --kw-gray4: #8E8E8E;
+    --kw-blue: #3B82F6; --kw-red: #EF4444; --kw-border: #E0E0E0;
+    --slack-purple: #4A154B; --slack-light: #F8F8F8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: var(--kw-gray1); color: var(--kw-ink); height: 100vh; display: flex; flex-direction: column; }
+
+  /* ─── Top Bar ─── */
+  .topbar {
+    background: var(--slack-purple); color: #fff; padding: 10px 20px;
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .topbar-title { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+  .topbar-sub { font-size: 12px; color: rgba(255,255,255,.65); }
+  .topbar-badge {
+    font-size: 9px; font-weight: 700; background: var(--kw-yellow); color: var(--kw-dark);
+    padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
+  }
+
+  /* ─── Main Layout ─── */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ─── Left Panel: Slack Input ─── */
+  .input-panel {
+    width: 45%; border-right: 1px solid var(--kw-border); display: flex; flex-direction: column;
+    background: #fff;
+  }
+  .panel-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--kw-border);
+    font-size: 13px; font-weight: 700; color: var(--kw-gray4);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .slack-input {
+    flex: 1; padding: 12px; border: none; resize: none; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px; line-height: 1.6; background: var(--slack-light); color: var(--kw-ink);
+  }
+  .slack-input:focus { outline: none; }
+  .slack-input::placeholder { color: var(--kw-gray3); }
+
+  /* ─── Preset Buttons ─── */
+  .preset-bar {
+    padding: 8px 12px; border-top: 1px solid var(--kw-border); display: flex; gap: 4px;
+    flex-wrap: wrap; background: #fff;
+  }
+  .preset-btn {
+    font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer;
+    border: 1px solid var(--kw-gray2); background: var(--kw-gray1); color: var(--kw-gray4);
+    transition: all .15s; font-weight: 600;
+  }
+  .preset-btn:hover { border-color: var(--slack-purple); color: var(--slack-purple); background: #F3EBFF; }
+
+  /* ─── Convert Button ─── */
+  .convert-bar {
+    padding: 10px 12px; border-top: 1px solid var(--kw-border); background: #fff;
+  }
+  .btn-convert {
+    width: 100%; padding: 10px; border: none; border-radius: 8px;
+    background: var(--slack-purple); color: #fff; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-convert:hover { background: #611f69; }
+  .btn-convert:active { transform: scale(0.98); }
+
+  /* ─── Right Panel: Output ─── */
+  .output-panel { flex: 1; display: flex; flex-direction: column; background: var(--kw-gray1); }
+
+  /* ─── Tabs ─── */
+  .tabs {
+    display: flex; border-bottom: 1px solid var(--kw-border); background: #fff; flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 700;
+    cursor: pointer; border-bottom: 2px solid transparent; color: var(--kw-gray4);
+    transition: all .15s;
+  }
+  .tab.active { color: var(--kw-dark); border-bottom-color: var(--kw-yellow); }
+  .tab:hover { color: var(--kw-dark); }
+
+  /* ─── Preview ─── */
+  .preview-wrap { flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center; }
+  .chat-bg { width: 100%; max-width: 420px; }
+  .bot-row { display: flex; gap: 8px; }
+  .bot-avatar { width: 36px; height: 36px; border-radius: 12px; background: var(--kw-yellow); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .bot-body { flex: 1; min-width: 0; }
+  .bot-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; color: var(--kw-ink); }
+  .bubble {
+    background: #fff; border-radius: 0 16px 16px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden;
+  }
+  .bubble-empty { padding: 40px 20px; text-align: center; color: var(--kw-gray3); font-size: 13px; line-height: 1.8; }
+
+  /* ─── Preview Blocks ─── */
+  .pv-header { padding: 12px 14px; font-size: 15px; font-weight: 800; color: #fff; }
+  .pv-header.blue { background: #3B82F6; } .pv-header.yellow { background: #F5C51C; color: #1A1A1A; }
+  .pv-header.red { background: #EF4444; } .pv-header.white { background: #fff; color: var(--kw-ink); border-bottom: 1px solid var(--kw-gray2); }
+  .pv-text { padding: 10px 14px; font-size: 13px; line-height: 1.7; color: var(--kw-ink); word-break: break-word; white-space: pre-wrap; }
+  .pv-image { width: 100%; display: block; }
+  .pv-image-ph { padding: 30px; text-align: center; background: var(--kw-gray1); color: var(--kw-gray3); font-size: 12px; }
+  .pv-divider { margin: 6px 14px; border-top: 1px solid var(--kw-gray2); }
+  .pv-btn-wrap { padding: 7px 14px; }
+  .pv-btn {
+    display: block; width: 100%; padding: 8px 12px; border-radius: 7px;
+    font-size: 13px; font-weight: 700; text-align: center; text-decoration: none;
+  }
+  .pv-btn.default { background: var(--kw-gray1); color: #555; }
+  .pv-btn.primary { background: var(--kw-yellow); color: var(--kw-dark); }
+  .pv-btn.danger { background: var(--kw-red); color: #fff; }
+  a.pv-btn { cursor: pointer; transition: opacity .15s; }
+  a.pv-btn:hover { opacity: .85; }
+  .pv-action { padding: 7px 14px; display: flex; gap: 6px; }
+  .pv-action .pv-btn { flex: 1; }
+  .pv-desc { padding: 8px 14px; display: flex; gap: 8px; font-size: 13px; }
+  .pv-term { font-weight: 700; color: var(--kw-gray4); min-width: 70px; flex-shrink: 0; }
+  .pv-term.accent { color: var(--kw-blue); }
+  .pv-desc-content { color: var(--kw-ink); }
+  .pv-section { padding: 10px 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .pv-section-text { flex: 1; font-size: 13px; line-height: 1.6; word-break: break-word; white-space: pre-wrap; }
+  .pv-section-img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+  .pv-context { padding: 6px 14px; display: flex; gap: 6px; align-items: center; }
+  .pv-ctx-img { width: 20px; height: 20px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: var(--kw-gray2); }
+  .pv-ctx-text { font-size: 11px; color: var(--kw-gray4); }
+
+  /* ─── JSON Panel ─── */
+  .json-panel { flex: 1; display: flex; flex-direction: column; }
+  .json-output {
+    flex: 1; padding: 12px; border: none; resize: none;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; line-height: 1.6;
+    background: var(--kw-gray1); color: var(--kw-ink);
+  }
+  .json-output:focus { outline: none; }
+  .json-actions { padding: 8px 12px; border-top: 1px solid var(--kw-border); background: #fff; display: flex; gap: 6px; }
+  .btn-copy {
+    flex: 1; padding: 8px; border: none; border-radius: 6px;
+    background: var(--kw-yellow); color: var(--kw-dark); font-weight: 700; font-size: 12px; cursor: pointer;
+  }
+  .btn-copy:hover { background: #e6b800; }
+
+  /* ─── Warnings Panel ─── */
+  .warnings-panel { flex: 1; overflow-y: auto; padding: 12px; }
+  .warn-item {
+    padding: 8px 12px; margin-bottom: 6px; border-radius: 6px; font-size: 12px; line-height: 1.5;
+  }
+  .warn-item.error { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+  .warn-item.warn { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  .warn-item.info { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+  .warn-count {
+    display: inline-block; font-size: 9px; font-weight: 700; background: var(--kw-red);
+    color: #fff; padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle;
+  }
+
+  .hidden { display: none !important; }
+
+  /* ─── Toast ─── */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: var(--kw-dark); color: #fff; padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-title">Slack → KakaoWork Converter</div>
+  <span class="topbar-badge">MVP</span>
+  <div class="topbar-sub">Slack Block Kit JSON을 KakaoWork Block Kit으로 변환</div>
+</div>
+
+<div class="main">
+  <!-- Left: Slack Input -->
+  <div class="input-panel">
+    <div class="panel-header">
+      <span>Slack Block Kit JSON 입력</span>
+      <button style="font-size:11px;padding:3px 8px;border:1px solid var(--kw-gray2);border-radius:4px;background:#fff;cursor:pointer;color:var(--kw-gray4)" onclick="document.getElementById('slackInput').value='';warnings=[];renderAll()">초기화</button>
+    </div>
+    <textarea class="slack-input" id="slackInput" placeholder='Slack Block Kit JSON을 붙여넣으세요.
+
+예시:
+{
+  "blocks": [
+    { "type": "header", "text": { "type": "plain_text", "text": "Deploy Complete" } },
+    { "type": "section", "text": { "type": "mrkdwn", "text": "Service *api-gateway* deployed :rocket:" } }
+  ]
+}'></textarea>
+    <div class="preset-bar" id="presetBar"></div>
+    <div class="convert-bar">
+      <button class="btn-convert" onclick="convert()">🔄 변환하기</button>
+    </div>
+  </div>
+
+  <!-- Right: Output -->
+  <div class="output-panel">
+    <div class="tabs">
+      <div class="tab active" id="tab-preview" onclick="switchTab('preview')">미리보기</div>
+      <div class="tab" id="tab-json" onclick="switchTab('json')">KW JSON</div>
+      <div class="tab" id="tab-warnings" onclick="switchTab('warnings')">경고 <span class="warn-count hidden" id="warnCount">0</span></div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-wrap" id="panel-preview">
+      <div class="chat-bg">
+        <div class="bot-row">
+          <div class="bot-avatar">🤖</div>
+          <div class="bot-body">
+            <div class="bot-name">KakaoWork Bot</div>
+            <div class="bubble" id="previewBubble">
+              <div class="bubble-empty">Slack JSON을 입력하고<br>🔄 변환하기를 누르세요</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JSON -->
+    <div class="json-panel hidden" id="panel-json">
+      <textarea class="json-output" id="jsonOut" readonly spellcheck="false"></textarea>
+      <div class="json-actions">
+        <button class="btn-copy" onclick="copyJSON()">📋 KW JSON 복사</button>
+      </div>
+    </div>
+
+    <!-- Warnings -->
+    <div class="warnings-panel hidden" id="panel-warnings">
+      <div id="warningsList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let kwBlocks = [];
+let warnings = [];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PRESETS (Top 10 봇 샘플)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const PRESETS = [
+  { name: 'GitHub PR', emoji: '🐙', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":"Pull Request Opened","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"*<https://github.com/acme/api/pull/42|#42 Add rate limiting>*"},"accessory":{"type":"image","image_url":"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png","alt_text":"GitHub"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Repository:*\nacme/api"},{"type":"mrkdwn","text":"*Author:*\njsmith"},{"type":"mrkdwn","text":"*Base:*\n`main` <- `feature/rate-limit`"},{"type":"mrkdwn","text":"*Reviewers:*\n@alice, @bob"}]},{"type":"context","elements":[{"type":"image","image_url":"https://avatars.githubusercontent.com/u/12345","alt_text":"jsmith"},{"type":"mrkdwn","text":"*jsmith* opened this PR on Mar 18, 2026"}]},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"View PR"},"url":"https://github.com/acme/api/pull/42","style":"primary"},{"type":"button","text":{"type":"plain_text","text":"View Files"},"url":"https://github.com/acme/api/pull/42/files"}]}]} },
+  { name: 'Jira Issue', emoji: '📋', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":":jira: New Issue Created","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"*<https://acme.atlassian.net/browse/ENG-1234|ENG-1234: Password reset bug>*"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Type:*\n:bug: Bug"},{"type":"mrkdwn","text":"*Priority:*\n:red_circle: High"},{"type":"mrkdwn","text":"*Assignee:*\nAlice Chen"},{"type":"mrkdwn","text":"*Sprint:*\nSprint 24"}]},{"type":"divider"},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"Open in Jira"},"url":"https://acme.atlassian.net/browse/ENG-1234","style":"primary"}]}]} },
+  { name: 'PagerDuty', emoji: '🚨', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":":rotating_light: Incident Triggered","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"*<https://acme.pagerduty.com/incidents/P1234|[TRIGGERED] High CPU on prod-web-03>*\nCPU exceeded 95% for 10 min."}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Severity:*\n:red_circle: Critical"},{"type":"mrkdwn","text":"*Service:*\nProd Web Cluster"},{"type":"mrkdwn","text":"*On-Call:*\n<@U034DEF>"},{"type":"mrkdwn","text":"*Escalation:*\nEngineering P1"}]},{"type":"divider"},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"View"},"url":"https://acme.pagerduty.com/incidents/P1234","style":"primary"},{"type":"button","text":{"type":"plain_text","text":"Acknowledge"},"action_id":"pd_ack"},{"type":"button","text":{"type":"plain_text","text":"Escalate"},"style":"danger","action_id":"pd_escalate"}]},{"type":"context","elements":[{"type":"mrkdwn","text":"PagerDuty | Key: `cpu-prod-web-03`"}]}]} },
+  { name: 'Sentry', emoji: '🐛', json: {"blocks":[{"type":"section","text":{"type":"mrkdwn","text":":red_circle: *<https://sentry.io/issues/98765/|TypeError: Cannot read property 'id' of undefined>*"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Project:*\napi-service"},{"type":"mrkdwn","text":"*Env:*\nproduction"},{"type":"mrkdwn","text":"*Level:*\nerror"},{"type":"mrkdwn","text":"*Events:*\n2,847"}]},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"```\nat UserService.getProfile (user.js:142)\nat Router.handle (router.js:45)\n```"}},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"View in Sentry"},"url":"https://sentry.io/issues/98765/","style":"primary"}]}]} },
+  { name: 'Datadog', emoji: '📊', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":":warning: Monitor Alert","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"*<https://app.datadoghq.com/monitors/123|[Triggered] High Memory>*\nMemory on `prod-api` exceeded 90%."}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Status:*\n:red_circle: Alert"},{"type":"mrkdwn","text":"*Metric:*\n`system.mem.pct`"},{"type":"mrkdwn","text":"*Current:*\n94.7%"},{"type":"mrkdwn","text":"*Threshold:*\n>90%"}]},{"type":"image","image_url":"https://picsum.photos/id/60/800/300","alt_text":"Memory graph"},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"View Monitor"},"url":"https://app.datadoghq.com/monitors/123","style":"primary"}]}]} },
+  { name: 'Jenkins', emoji: '🔧', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":":white_check_mark: Build #247 Succeeded","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"*<https://jenkins.acme.com/job/api/247/|api-service #247>*\nBranch: `main` | Commit: `a1b2c3d`"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Status:*\n:white_check_mark: SUCCESS"},{"type":"mrkdwn","text":"*Duration:*\n6m 14s"},{"type":"mrkdwn","text":"*Tests:*\n342 passed"},{"type":"mrkdwn","text":"*Trigger:*\nGitHub push"}]},{"type":"divider"},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"View Build"},"url":"https://jenkins.acme.com/job/api/247/"},{"type":"button","text":{"type":"plain_text","text":"Console"},"url":"https://jenkins.acme.com/job/api/247/console"},{"type":"button","text":{"type":"plain_text","text":"Tests"},"url":"https://jenkins.acme.com/job/api/247/testReport/"}]}]} },
+  { name: 'Stripe', emoji: '💳', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":":white_check_mark: Payment Succeeded","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"Payment of *$2,499.00 USD* processed."}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Customer:*\n<https://stripe.com/cus/abc|Acme Corp>"},{"type":"mrkdwn","text":"*Amount:*\n$2,499.00"},{"type":"mrkdwn","text":"*Method:*\n:credit_card: Visa ****4242"},{"type":"mrkdwn","text":"*Invoice:*\n#INV-0342"}]},{"type":"divider"},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"View Payment"},"url":"https://dashboard.stripe.com/payments/pi_abc","style":"primary"}]}]} },
+  { name: 'Grafana', emoji: '📈', json: {"blocks":[{"type":"header","text":{"type":"plain_text","text":":bell: [FIRING:2] High Latency","emoji":true}},{"type":"section","text":{"type":"mrkdwn","text":"*Alert:* <https://grafana.acme.com/alerting/abc|API Latency SLO Breach>"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":":bell: *api-gateway / prod*\nP99: 847ms (threshold: 500ms)"}},{"type":"section","text":{"type":"mrkdwn","text":":bell: *payment-svc / prod*\nP99: 1,203ms (threshold: 500ms)"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":":chart_with_upwards_trend: <https://grafana.acme.com/d/abc|Dashboard> | :mute: <https://grafana.acme.com/silence|Silence>"}},{"type":"context","elements":[{"type":"image","image_url":"https://grafana.com/static/img/menu/grafana2.svg","alt_text":"Grafana"},{"type":"mrkdwn","text":"Grafana Alerting | Platform Alerts"}]}]} },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MRKDWN PARSER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const EMOJI_MAP = {
+  ':white_check_mark:':'✅',':x:':'❌',':warning:':'⚠️',':fire:':'🔥',':rocket:':'🚀',
+  ':bug:':'🐛',':tada:':'🎉',':eyes:':'👀',':thumbsup:':'👍',':thumbsdown:':'👎',
+  ':red_circle:':'🔴',':large_green_circle:':'🟢',':large_yellow_circle:':'🟡',':large_blue_circle:':'🔵',
+  ':large_orange_diamond:':'🔶',':bell:':'🔔',':memo:':'📝',':gear:':'⚙️',':link:':'🔗',
+  ':chart_with_upwards_trend:':'📈',':chart_with_downwards_trend:':'📉',':lock:':'🔒',
+  ':heavy_check_mark:':'✔️',':hourglass:':'⏳',':rotating_light:':'🚨',':mute:':'🔇',
+  ':page_facing_up:':'📄',':credit_card:':'💳',':email:':'📧',':ticket:':'🎫',
+  ':calendar:':'📅',':video_camera:':'📹',':arrow_up:':'⬆️',':repeat:':'🔁',
+  ':jira:':'📋',':github:':'🐙',
+};
+
+function convertMrkdwn(text) {
+  if (!text) return '';
+  let s = text;
+  // code blocks (preserve content)
+  s = s.replace(/```([\s\S]*?)```/g, (_, c) => c.trim());
+  // inline code
+  s = s.replace(/`([^`]+)`/g, '$1');
+  // links
+  s = s.replace(/<(https?:\/\/[^|>]+)\|([^>]+)>/g, '$2 ($1)');
+  s = s.replace(/<(https?:\/\/[^>]+)>/g, '$1');
+  // mentions
+  s = s.replace(/<@[A-Z0-9]+>/g, '@사용자');
+  s = s.replace(/<#[A-Z0-9]+>/g, '#채널');
+  s = s.replace(/<!here>/g, '@here');
+  s = s.replace(/<!channel>/g, '@channel');
+  s = s.replace(/<!everyone>/g, '@everyone');
+  // date formatting fallback
+  s = s.replace(/<!date\^[^|>]*\|([^>]+)>/g, '$1');
+  s = s.replace(/<!date\^[^>]+>/g, '');
+  // formatting
+  s = s.replace(/\*([^*]+)\*/g, '$1');
+  s = s.replace(/_([^_]+)_/g, '$1');
+  s = s.replace(/~([^~]+)~/g, '$1');
+  // blockquote
+  s = s.replace(/^> (.+)$/gm, '❝ $1');
+  // emoji
+  for (const [code, uni] of Object.entries(EMOJI_MAP)) {
+    s = s.replaceAll(code, uni);
+  }
+  return s;
+}
+
+function extractText(obj) {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj;
+  if (obj.type === 'mrkdwn') return convertMrkdwn(obj.text || '');
+  return obj.text || '';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BLOCK CONVERTER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function convertBlocks(slackBlocks) {
+  const result = [];
+  warnings = [];
+
+  if (!Array.isArray(slackBlocks)) {
+    warnings.push({ type: 'error', msg: 'blocks 배열이 없습니다.' });
+    return result;
+  }
+
+  for (const block of slackBlocks) {
+    const converted = convertBlock(block);
+    if (converted) {
+      if (Array.isArray(converted)) result.push(...converted);
+      else result.push(converted);
+    }
+  }
+
+  // Post-processing: divider at first/last
+  while (result.length > 0 && result[0].type === 'divider') {
+    result.shift();
+    warnings.push({ type: 'warn', msg: 'divider가 첫 번째 블럭이라 제거되었습니다 (KW 스펙 제약).' });
+  }
+  while (result.length > 0 && result[result.length - 1].type === 'divider') {
+    result.pop();
+    warnings.push({ type: 'warn', msg: 'divider가 마지막 블럭이라 제거되었습니다 (KW 스펙 제약).' });
+  }
+
+  // Block limit
+  if (result.length > 30) {
+    warnings.push({ type: 'warn', msg: `블럭이 ${result.length}개입니다. KW는 최대 30개까지 지원합니다. 초과분은 잘립니다.` });
+    result.length = 30;
+  }
+
+  // Text length limit (KW: 10,000 chars)
+  for (const b of result) {
+    const fields = [b.text, b.content?.text, b.term];
+    for (const f of fields) {
+      if (typeof f === 'string' && f.length > 10000) {
+        warnings.push({ type: 'warn', msg: `텍스트가 ${f.length}자입니다. KW 최대 10,000자로 잘립니다.` });
+      }
+    }
+    if (typeof b.text === 'string' && b.text.length > 10000) b.text = b.text.slice(0, 10000) + '…';
+    if (b.content?.text && b.content.text.length > 10000) b.content.text = b.content.text.slice(0, 10000) + '…';
+  }
+
+  return result;
+}
+
+function convertBlock(b) {
+  switch (b.type) {
+    case 'header':
+      return { type: 'header', text: extractText(b.text), style: 'blue' };
+
+    case 'section': {
+      const results = [];
+      // fields → description 배열
+      if (b.fields && b.fields.length > 0) {
+        for (const f of b.fields) {
+          const raw = extractText(f);
+          const match = raw.match(/^(.+?)[\n\r]+(.+)$/s);
+          if (match) {
+            // "Label:\nValue" 패턴
+            const term = match[1].replace(/:$/, '').trim();
+            const content = match[2].trim();
+            results.push({ type: 'description', term, content: { type: 'text', text: content }, accent: true });
+          } else {
+            results.push({ type: 'text', text: raw });
+          }
+        }
+        return results;
+      }
+      // section with accessory image
+      if (b.accessory && (b.accessory.type === 'image')) {
+        return {
+          type: 'section',
+          content: { type: 'text', text: extractText(b.text) },
+          accessory: { type: 'image_link', url: b.accessory.image_url || '' }
+        };
+      }
+      // section with accessory button → split
+      if (b.accessory && b.accessory.type === 'button') {
+        const textBlock = { type: 'text', text: extractText(b.text) };
+        const btnUrl = b.accessory.url;
+        if (btnUrl) {
+          const btn = {
+            type: 'button', text: extractText(b.accessory.text),
+            style: mapStyle(b.accessory.style),
+            action: { type: 'open_system_browser', value: btnUrl }
+          };
+          return [textBlock, btn];
+        }
+        warnings.push({ type: 'warn', msg: `section accessory 버튼 "${extractText(b.accessory.text)}"에 URL이 없어 제거됩니다.` });
+        return textBlock;
+      }
+      // plain section → text
+      return { type: 'text', text: extractText(b.text) };
+    }
+
+    case 'context': {
+      const elements = b.elements || [];
+      const images = elements.filter(e => e.type === 'image');
+      const texts = elements.filter(e => e.type !== 'image').map(e => extractText(e));
+      const ctx = { type: 'context', content: { type: 'text', text: texts.join(' · ') } };
+      if (images.length > 0) {
+        ctx.image = { type: 'image_link', url: images[0].image_url || '' };
+      }
+      return ctx;
+    }
+
+    case 'divider':
+      return { type: 'divider' };
+
+    case 'image':
+      return { type: 'image_link', url: b.image_url || '' };
+
+    case 'actions': {
+      const buttons = [];
+      for (const el of (b.elements || [])) {
+        if (el.type === 'button') {
+          if (el.url) {
+            buttons.push({
+              type: 'button', text: extractText(el.text),
+              style: mapStyle(el.style),
+              action: { type: 'open_system_browser', value: el.url }
+            });
+          } else {
+            warnings.push({ type: 'warn', msg: `버튼 "${extractText(el.text)}"에 URL이 없습니다 (Slack 인터랙티브 전용). KW에서는 제거됩니다.` });
+          }
+        } else if (el.type === 'static_select' || el.type === 'external_select' || el.type?.includes('select')) {
+          warnings.push({ type: 'warn', msg: `셀렉트 메뉴 "${extractText(el.placeholder)}"는 KW 메시지에서 지원되지 않아 제거됩니다.` });
+        } else if (el.type === 'overflow') {
+          warnings.push({ type: 'warn', msg: '오버플로 메뉴는 KW에서 지원되지 않아 제거됩니다.' });
+        } else {
+          warnings.push({ type: 'warn', msg: `미지원 actions 엘리먼트: ${el.type}` });
+        }
+      }
+      if (buttons.length === 0) return null;
+      // 3개씩 분할
+      const actionBlocks = [];
+      for (let i = 0; i < buttons.length; i += 3) {
+        actionBlocks.push({ type: 'action', elements: buttons.slice(i, i + 3) });
+      }
+      return actionBlocks;
+    }
+
+    case 'input':
+      warnings.push({ type: 'warn', msg: `input 블록 "${extractText(b.label)}"은 KW 메시지에서 지원되지 않아 제거됩니다 (모달 전용).` });
+      return null;
+
+    case 'rich_text':
+      warnings.push({ type: 'info', msg: 'rich_text 블록은 평문으로 변환됩니다.' });
+      // Attempt to extract text from rich_text elements
+      try {
+        const texts = [];
+        for (const el of (b.elements || [])) {
+          for (const item of (el.elements || [])) {
+            if (item.text) texts.push(item.text);
+          }
+        }
+        return texts.length > 0 ? { type: 'text', text: texts.join('') } : null;
+      } catch { return null; }
+
+    case 'video':
+      warnings.push({ type: 'warn', msg: 'video 블록은 KW에서 지원되지 않아 링크로 대체됩니다.' });
+      if (b.video_url) return { type: 'text', text: `🎬 ${b.title?.text || '동영상'}: ${b.video_url}` };
+      return null;
+
+    case 'file':
+      warnings.push({ type: 'warn', msg: 'file 블록은 KW에서 지원되지 않아 제거됩니다.' });
+      return null;
+
+    default:
+      warnings.push({ type: 'info', msg: `알 수 없는 블록 타입: ${b.type}` });
+      return null;
+  }
+}
+
+function mapStyle(slackStyle) {
+  if (slackStyle === 'primary') return 'primary';
+  if (slackStyle === 'danger') return 'danger';
+  return 'default';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONVERT & RENDER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function convert() {
+  const raw = document.getElementById('slackInput').value.trim();
+  if (!raw) { toast('Slack JSON을 입력해주세요.'); return; }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    toast(`JSON 파싱 오류: ${e.message}`);
+    warnings = [{ type: 'error', msg: `JSON 파싱 실패: ${e.message}` }];
+    renderWarnings();
+    return;
+  }
+
+  const slackBlocks = parsed.blocks || parsed;
+  if (!Array.isArray(slackBlocks) && parsed.blocks === undefined) {
+    toast('blocks 배열을 찾을 수 없습니다.');
+    return;
+  }
+
+  kwBlocks = convertBlocks(Array.isArray(slackBlocks) ? slackBlocks : []);
+  renderAll();
+  toast(`변환 완료! ${kwBlocks.length}개 블럭, ${warnings.length}개 경고`);
+}
+
+function renderAll() {
+  renderPreview();
+  renderJSON();
+  renderWarnings();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PREVIEW
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function eh(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function safeUrl(url) {
+  if (!url) return '';
+  try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') ? url : ''; }
+  catch { return ''; }
+}
+
+function renderPreview() {
+  const bubble = document.getElementById('previewBubble');
+  if (kwBlocks.length === 0) {
+    bubble.innerHTML = '<div class="bubble-empty">Slack JSON을 입력하고<br>🔄 변환하기를 누르세요</div>';
+    return;
+  }
+  bubble.innerHTML = kwBlocks.map(renderBlock).join('');
+}
+
+function renderBlock(b) {
+  switch (b.type) {
+    case 'header':
+      return `<div class="pv-header ${b.style||'blue'}">${eh(b.text)}</div>`;
+    case 'text':
+      return `<div class="pv-text">${eh(b.text).replace(/\n/g,'<br>')}</div>`;
+    case 'image_link': {
+      const src = safeUrl(b.url);
+      return src
+        ? `<img class="pv-image" src="${eh(src)}" onerror="this.outerHTML='<div class=\\'pv-image-ph\\'>이미지를 불러올 수 없습니다</div>'">`
+        : '<div class="pv-image-ph">🖼 이미지 URL 없음</div>';
+    }
+    case 'divider':
+      return '<div class="pv-divider"></div>';
+    case 'button': {
+      const url = safeUrl(b.action?.value);
+      return url
+        ? `<div class="pv-btn-wrap"><a class="pv-btn ${b.style||'default'}" href="${eh(url)}" target="_blank" rel="noopener noreferrer">${eh(b.text)}</a></div>`
+        : `<div class="pv-btn-wrap"><div class="pv-btn ${b.style||'default'}">${eh(b.text)}</div></div>`;
+    }
+    case 'action':
+      return `<div class="pv-action">${(b.elements||[]).map(el => {
+        const url = safeUrl(el.action?.value);
+        return url
+          ? `<a class="pv-btn ${el.style||'default'}" href="${eh(url)}" target="_blank" rel="noopener noreferrer">${eh(el.text)}</a>`
+          : `<div class="pv-btn ${el.style||'default'}">${eh(el.text)}</div>`;
+      }).join('')}</div>`;
+    case 'description':
+      return `<div class="pv-desc"><div class="pv-term ${b.accent?'accent':''}">${eh(b.term)}</div><div class="pv-desc-content">${eh(b.content?.text||'')}</div></div>`;
+    case 'section': {
+      const src = safeUrl(b.accessory?.url);
+      const img = src ? `<img class="pv-section-img" src="${eh(src)}" onerror="this.style.background='#eee'">` : '';
+      return `<div class="pv-section"><div class="pv-section-text">${eh(b.content?.text||'').replace(/\n/g,'<br>')}</div>${img}</div>`;
+    }
+    case 'context': {
+      const src = safeUrl(b.image?.url);
+      const icon = src
+        ? `<img class="pv-ctx-img" src="${eh(src)}" onerror="this.style.background='#ddd'">`
+        : '';
+      return `<div class="pv-context">${icon}<div class="pv-ctx-text">${eh(b.content?.text||'')}</div></div>`;
+    }
+    default: return '';
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// JSON OUTPUT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderJSON() {
+  const payload = { blocks: kwBlocks };
+  document.getElementById('jsonOut').value = JSON.stringify(payload, null, 2);
+}
+
+function copyJSON() {
+  const json = document.getElementById('jsonOut').value;
+  if (!json) { toast('변환할 JSON이 없습니다.'); return; }
+  navigator.clipboard.writeText(json).then(() => toast('KW JSON이 복사되었습니다! 📋')).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = json;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); toast('복사되었습니다! 📋');
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// WARNINGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderWarnings() {
+  const el = document.getElementById('warningsList');
+  const badge = document.getElementById('warnCount');
+  if (warnings.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--kw-gray3);padding:40px;font-size:13px">경고 없음 ✅</div>';
+    badge.classList.add('hidden');
+    return;
+  }
+  badge.textContent = warnings.length;
+  badge.classList.remove('hidden');
+  el.innerHTML = warnings.map(w =>
+    `<div class="warn-item ${w.type}">${w.type === 'error' ? '❌' : w.type === 'warn' ? '⚠️' : 'ℹ️'} ${eh(w.msg)}</div>`
+  ).join('');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TABS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function switchTab(tab) {
+  ['preview','json','warnings'].forEach(t => {
+    document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TOAST
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function init() {
+  document.getElementById('presetBar').innerHTML = PRESETS.map((p, i) =>
+    `<button class="preset-btn" onclick="loadPreset(${i})">${p.emoji} ${p.name}</button>`
+  ).join('');
+}
+
+function loadPreset(idx) {
+  if (idx < 0 || idx >= PRESETS.length) return;
+  document.getElementById('slackInput').value = JSON.stringify(PRESETS[idx].json, null, 2);
+  convert();
+}
+
+init();
+</script>
+</body>
+</html>
