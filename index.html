@@ -628,11 +628,20 @@ function convertBlock(b) {
       const elements = b.elements || [];
       const images = elements.filter(e => e.type === 'image');
       const texts = elements.filter(e => e.type !== 'image').map(e => extractText(e));
-      const ctx = { type: 'context', content: { type: 'text', text: texts.join(' · ') } };
-      if (images.length > 0) {
-        ctx.image = { type: 'image_link', url: images[0].image_url || '' };
+      const textContent = texts.join(' · ');
+      // KW context에서 image는 필수 — 이미지 없으면 text 블록으로 대체
+      if (images.length === 0) {
+        warnings.push({ type: 'info', msg: 'Slack context에 이미지가 없어 text 블록으로 변환됩니다 (KW context는 이미지 필수).' });
+        return { type: 'text', text: textContent };
       }
-      return ctx;
+      if (images.length > 1) {
+        warnings.push({ type: 'info', msg: `context에 이미지 ${images.length}개 중 첫 번째만 사용됩니다.` });
+      }
+      return {
+        type: 'context',
+        content: { type: 'text', text: textContent },
+        image: { type: 'image_link', url: images[0].image_url || '' }
+      };
     }
 
     case 'divider':
@@ -663,10 +672,19 @@ function convertBlock(b) {
         }
       }
       if (buttons.length === 0) return null;
-      // 3개씩 분할
+      // 1개면 단독 button 블록 (KW action은 최소 2개 필요)
+      if (buttons.length === 1) return buttons[0];
+      // 2~3개씩 분할 (마지막 그룹이 1개면 앞 그룹에서 1개 빌려서 2+2로)
       const actionBlocks = [];
       for (let i = 0; i < buttons.length; i += 3) {
-        actionBlocks.push({ type: 'action', elements: buttons.slice(i, i + 3) });
+        const chunk = buttons.slice(i, i + 3);
+        // 마지막 그룹이 1개이고 앞 그룹이 있으면 → 앞에서 1개 이동해 2+2로
+        if (chunk.length === 1 && actionBlocks.length > 0) {
+          const prev = actionBlocks[actionBlocks.length - 1].elements;
+          const moved = prev.pop();
+          chunk.unshift(moved);
+        }
+        actionBlocks.push({ type: 'action', elements: chunk });
       }
       return actionBlocks;
     }
