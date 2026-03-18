@@ -358,8 +358,8 @@ function convertBlocks(slackBlocks) {
         warnings.push({ type: 'warn', msg: `텍스트가 ${f.length}자입니다. KW 최대 10,000자로 잘립니다.` });
       }
     }
-    if (typeof b.text === 'string' && b.text.length > 10000) b.text = b.text.slice(0, 10000) + '…';
-    if (b.content?.text && b.content.text.length > 10000) b.content.text = b.content.text.slice(0, 10000) + '…';
+    if (typeof b.text === 'string' && b.text.length > 10000) b.text = b.text.slice(0, 9999) + '…';
+    if (b.content?.text && b.content.text.length > 10000) b.content.text = b.content.text.slice(0, 9999) + '…';
   }
 
   return result;
