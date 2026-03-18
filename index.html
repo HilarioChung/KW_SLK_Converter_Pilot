@@ -558,17 +558,50 @@ function convertBlocks(slackBlocks) {
     result.length = 30;
   }
 
-  // Text length limit (KW: 10,000 chars)
+  // KW 스펙 제한 적용
   for (const b of result) {
-    const fields = [b.text, b.content?.text, b.term];
-    for (const f of fields) {
-      if (typeof f === 'string' && f.length > 10000) {
-        warnings.push({ type: 'warn', msg: `텍스트가 ${f.length}자입니다. KW 최대 10,000자로 잘립니다.` });
+    // Header text: max 20자
+    if (b.type === 'header' && b.text && b.text.length > 20) {
+      warnings.push({ type: 'warn', msg: `헤더 텍스트가 ${b.text.length}자입니다 (KW 최대 20자). 잘립니다.` });
+      b.text = b.text.slice(0, 19) + '…';
+    }
+    // Text/content.text: max 500자
+    if (b.type === 'text' && b.text && b.text.length > 500) {
+      warnings.push({ type: 'warn', msg: `텍스트가 ${b.text.length}자입니다 (KW 최대 500자). 잘립니다.` });
+      b.text = b.text.slice(0, 499) + '…';
+    }
+    if (b.content?.text && b.content.text.length > 500) {
+      warnings.push({ type: 'warn', msg: `텍스트가 ${b.content.text.length}자입니다 (KW 최대 500자). 잘립니다.` });
+      b.content.text = b.content.text.slice(0, 499) + '…';
+    }
+    // Description term: max 10자
+    if (b.type === 'description' && b.term && b.term.length > 10) {
+      warnings.push({ type: 'warn', msg: `설명 레이블 "${b.term}"이 ${b.term.length}자입니다 (KW 최대 10자). 잘립니다.` });
+      b.term = b.term.slice(0, 9) + '…';
+    }
+    // Button text: max 20자
+    if (b.type === 'button' && b.text && b.text.length > 20) {
+      warnings.push({ type: 'warn', msg: `버튼 텍스트 "${b.text}"이 ${b.text.length}자입니다 (KW 최대 20자). 잘립니다.` });
+      b.text = b.text.slice(0, 19) + '…';
+    }
+    // Action 내부 버튼도 체크
+    if (b.type === 'action') {
+      for (const el of (b.elements || [])) {
+        if (el.text && el.text.length > 20) {
+          warnings.push({ type: 'warn', msg: `버튼 텍스트 "${el.text}"이 ${el.text.length}자입니다 (KW 최대 20자). 잘립니다.` });
+          el.text = el.text.slice(0, 19) + '…';
+        }
       }
     }
-    if (typeof b.text === 'string' && b.text.length > 10000) b.text = b.text.slice(0, 9999) + '…';
-    if (b.content?.text && b.content.text.length > 10000) b.content.text = b.content.text.slice(0, 9999) + '…';
+    // image_link 빈 URL 제거
+    if (b.type === 'image_link' && !b.url) {
+      warnings.push({ type: 'warn', msg: '이미지 URL이 비어있어 제거됩니다.' });
+    }
   }
+  // 빈 image_link 블록 제거
+  const filtered = result.filter(b => !(b.type === 'image_link' && !b.url));
+  result.length = 0;
+  result.push(...filtered);
 
   return result;
 }
@@ -983,7 +1016,7 @@ function cleanForAPI(blocks) {
       case 'divider':     return { type: 'divider' };
       case 'button':      return { type: 'button', text: b.text, style: b.style, action: b.action };
       case 'action':      return { type: 'action', elements: (b.elements||[]).map(el => ({ type: 'button', text: el.text, style: el.style, action: el.action })) };
-      case 'description': return { type: 'description', term: b.term, content: b.content };
+      case 'description': return { type: 'description', term: b.term, content: b.content, accent: !!b.accent };
       case 'section': {
         const out = { type: 'section', content: b.content };
         if (b.accessory) out.accessory = b.accessory;

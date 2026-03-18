@@ -1103,8 +1103,8 @@ function buildForm(b, i) {
           oninput="blocks[${i}].term=this.value;updateOutput()">
       </div>
       <div class="fg">
-        <label class="fl">내용</label>
-        <textarea class="fta" oninput="blocks[${i}].content.text=this.value;updateOutput()">${eh(b.content?.text||'')}</textarea>
+        <label class="fl">내용 <span style="color:#bbb;font-weight:400">(최대 500자)</span></label>
+        <textarea class="fta" maxlength="500" oninput="blocks[${i}].content.text=this.value;updateOutput()">${eh(b.content?.text||'')}</textarea>
       </div>
       <div class="fg">
         <label class="fc-label">
@@ -1279,10 +1279,28 @@ function validate() {
       warnings.push({ level:'error', msg:`블럭 ${i+1}: 컨텍스트(Context)의 이미지 URL은 필수 항목입니다.` });
   });
 
-  // 버튼 그룹 최소 2개
+  // 버튼 그룹 최소 2개, 최대 3개
   blocks.forEach((b, i) => {
     if (b.type === 'action' && (b.elements||[]).length < 2)
       warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 그룹(Action)에는 최소 2개의 버튼이 있어야 합니다.` });
+    if (b.type === 'action' && (b.elements||[]).length > 3)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 그룹(Action)에는 최대 3개의 버튼만 허용됩니다.` });
+  });
+
+  // ── 글자수 제한 (스펙 위반) ──────────────────────
+  blocks.forEach((b, i) => {
+    if (b.type === 'header' && b.text?.length > 20)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 헤더 텍스트가 ${b.text.length}자입니다 (최대 20자).` });
+    if (b.type === 'text' && b.text?.length > 500)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 텍스트가 ${b.text.length}자입니다 (최대 500자).` });
+    if (b.type === 'description' && b.term?.length > 10)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 설명 레이블이 ${b.term.length}자입니다 (최대 10자).` });
+    if ((b.type === 'button') && b.text?.length > 20)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 텍스트가 ${b.text.length}자입니다 (최대 20자).` });
+    if (b.type === 'description' && b.content?.text?.length > 500)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 설명 내용이 ${b.content.text.length}자입니다 (최대 500자).` });
+    if (b.type === 'image_link' && !b.url)
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 이미지 URL이 비어있습니다 (필수).` });
   });
 
   // ── 권장하지 않음 (스펙 가이드 위반) ──────────────────────
