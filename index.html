@@ -232,7 +232,14 @@
     { "type": "section", "text": { "type": "mrkdwn", "text": "Service *api-gateway* deployed :rocket:" } }
   ]
 }'></textarea>
-    <div class="preset-bar" id="presetBar"></div>
+    <div class="preset-bar">
+      <span style="font-size:10px;color:var(--kw-gray4);font-weight:700;margin-right:2px">추천</span>
+      <button class="preset-btn" style="border-color:var(--slack-purple);color:var(--slack-purple);background:#F3EBFF" onclick="loadPreset(0)">🐙 GitHub PR</button>
+      <button class="preset-btn" style="border-color:var(--slack-purple);color:var(--slack-purple);background:#F3EBFF" onclick="loadPreset(2)">🚨 PagerDuty</button>
+      <button class="preset-btn" style="border-color:var(--slack-purple);color:var(--slack-purple);background:#F3EBFF" onclick="loadPreset(3)">🐛 Sentry</button>
+      <span style="font-size:10px;color:var(--kw-gray3);margin:0 2px">|</span>
+      <span id="presetBar"></span>
+    </div>
     <div class="convert-bar">
       <button class="btn-convert" onclick="convert()">🔄 변환하기</button>
     </div>
@@ -372,17 +379,21 @@ function convertMrkdwn(text) {
   // blockquote
   s = s.replace(/^> (.+)$/gm, '❝ $1');
   // emoji
-  for (const [code, uni] of Object.entries(EMOJI_MAP)) {
-    s = s.replaceAll(code, uni);
-  }
+  return convertEmoji(s);
+}
+
+function convertEmoji(text) {
+  if (!text) return '';
+  let s = text;
+  for (const [code, uni] of Object.entries(EMOJI_MAP)) s = s.replaceAll(code, uni);
   return s;
 }
 
 function extractText(obj) {
   if (!obj) return '';
-  if (typeof obj === 'string') return obj;
+  if (typeof obj === 'string') return convertEmoji(obj);
   if (obj.type === 'mrkdwn') return convertMrkdwn(obj.text || '');
-  return obj.text || '';
+  return convertEmoji(obj.text || '');
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
