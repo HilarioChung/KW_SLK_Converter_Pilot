@@ -6,123 +6,141 @@
 <title>Slack → KakaoWork Converter</title>
 <style>
   :root {
-    --kw-yellow: #F5C51C; --kw-dark: #1A1A1A; --kw-ink: #2D2D2D;
-    --kw-gray1: #F5F5F5; --kw-gray2: #E8E8E8; --kw-gray3: #BDBDBD; --kw-gray4: #8E8E8E;
-    --kw-blue: #3B82F6; --kw-red: #EF4444; --kw-border: #E0E0E0;
-    --slack-purple: #4A154B; --slack-purple-light: #611F69; --slack-light: #F8F8F8;
-    --color-success: #22C55E; --color-error: #EF4444; --color-warning: #F59E0B; --color-info: #3B82F6;
+    --kw-yellow: #FEE500; --kw-yellow-light: #FFF9C4; --kw-yellow-dark: #CCA100;
+    --kw-dark: #1A1A1A; --kw-ink: #222; --kw-blue: #3B82F6; --kw-red: #EF4444;
+    --kw-gray1: #F7F7F7; --kw-gray2: #EDEDED; --kw-gray3: #BDBDBD; --kw-gray4: #8E8E8E;
+    --kw-border: #E2E2E8;
+    --slack-purple: #4A154B; --slack-purple-light: #611F69; --slack-light: #FAFAFA;
+    --color-success: #22C55E; --color-error: #DC3545; --color-warning: #F59E0B; --color-info: #007BFF;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+    --shadow-lg: 0 10px 20px rgba(0,0,0,.08), 0 4px 8px rgba(0,0,0,.04);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, 'Pretendard', sans-serif; background: var(--kw-gray1); color: var(--kw-ink); height: 100vh; display: flex; flex-direction: column; }
+  body {
+    font-family: -apple-system, 'Pretendard', 'Noto Sans KR', sans-serif;
+    background: #EEEDF2; color: var(--kw-ink); height: 100vh; display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
 
   /* ─── Global Nav ─── */
   .gnb {
-    display: flex; align-items: center; background: #1A1A1A; flex-shrink: 0;
-    padding: 0 16px; gap: 2px; height: 36px;
+    display: flex; align-items: center; background: var(--slack-purple); flex-shrink: 0;
+    padding: 0 20px; gap: 4px; height: 44px;
   }
-  .gnb-brand { font-size: 11px; font-weight: 800; color: rgba(255,255,255,.4); margin-right: 12px; letter-spacing: 0.5px; }
+  .gnb-brand { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.55); margin-right: 16px; letter-spacing: 0.8px; }
   .gnb-link {
-    padding: 6px 14px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.55);
-    text-decoration: none; border-radius: 6px 6px 0 0; transition: all .15s;
+    padding: 8px 16px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.6);
+    text-decoration: none; border-radius: 8px; transition: all .2s;
   }
-  .gnb-link:hover { color: #fff; background: rgba(255,255,255,.08); }
-  .gnb-link.active { color: #fff; background: var(--slack-purple); }
+  .gnb-link:hover { color: #fff; background: rgba(255,255,255,.1); }
+  .gnb-link.active { color: #fff; background: var(--slack-purple-light); font-weight: 700; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
 
   /* ─── Top Bar ─── */
   .topbar {
     background: linear-gradient(135deg, var(--slack-purple) 0%, var(--slack-purple-light) 100%);
-    color: #fff; padding: 14px 24px;
-    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(74,21,75,.3);
+    color: #fff; padding: 18px 28px;
+    display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+    box-shadow: var(--shadow-md); position: relative; z-index: 10;
   }
-  .topbar-title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
-  .topbar-sub { font-size: 12px; color: rgba(255,255,255,.7); }
+  .topbar-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .topbar-sub { font-size: 13px; color: rgba(255,255,255,.75); }
   .topbar-badge {
-    font-size: 9px; font-weight: 700; background: var(--kw-yellow); color: var(--kw-dark);
-    padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
+    font-size: 10px; font-weight: 800; background: var(--kw-yellow); color: var(--kw-dark);
+    padding: 3px 8px; border-radius: 6px; letter-spacing: 0.6px; box-shadow: var(--shadow-sm);
   }
 
   /* ─── Main Layout ─── */
-  .main { display: flex; flex: 1; overflow: hidden; }
+  .main { display: flex; flex: 1; overflow: hidden; margin: 12px; border-radius: 12px; box-shadow: var(--shadow-lg); background: #fff; }
 
   /* ─── Left Panel: Slack Input ─── */
   .input-panel {
-    width: 45%; border-right: 1px solid var(--kw-border); display: flex; flex-direction: column;
-    background: #fff;
+    width: 46%; border-right: 1px solid var(--kw-border); display: flex; flex-direction: column;
+    background: #fff; border-radius: 12px 0 0 12px;
   }
   .panel-header {
-    padding: 12px 16px; border-bottom: 1px solid var(--kw-border);
-    font-size: 13px; font-weight: 700; color: var(--kw-gray4);
+    padding: 14px 20px; border-bottom: 1px solid var(--kw-gray2);
+    font-size: 14px; font-weight: 700; color: var(--kw-gray4);
     display: flex; align-items: center; justify-content: space-between;
+    background: var(--kw-gray1);
   }
   .slack-input {
-    flex: 1; padding: 12px; border: none; resize: none; font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 12px; line-height: 1.6; background: var(--slack-light); color: var(--kw-ink);
+    flex: 1; padding: 16px 20px; border: none; resize: none; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px; line-height: 1.8; background: var(--slack-light); color: var(--kw-ink);
+    caret-color: var(--slack-purple);
   }
-  .slack-input:focus { outline: none; box-shadow: inset 0 0 0 2px rgba(74,21,75,.15); }
+  .slack-input:focus { outline: none; box-shadow: inset 0 0 0 2px rgba(74,21,75,.12); background: #fff; }
   .slack-input::placeholder { color: var(--kw-gray3); }
 
   /* ─── Bot Selector ─── */
   .selector-section {
-    padding: 10px 12px; border-top: 1px solid var(--kw-border); background: var(--kw-gray1);
+    padding: 12px 16px; border-top: 1px solid var(--kw-gray2); background: var(--kw-gray1);
   }
   .section-label {
-    font-size: 10px; font-weight: 800; color: var(--kw-gray4); letter-spacing: 0.5px;
-    text-transform: uppercase; margin-bottom: 6px;
+    font-size: 11px; font-weight: 800; color: var(--kw-gray4); letter-spacing: 0.8px;
+    text-transform: uppercase; margin-bottom: 8px;
   }
   .bot-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
   }
   .bot-chip {
-    padding: 6px 4px; border-radius: 6px; text-align: center; cursor: pointer;
-    border: 1.5px solid var(--kw-gray2); background: #fff; transition: all .15s;
+    padding: 8px 4px; border-radius: 8px; text-align: center; cursor: pointer;
+    border: 1.5px solid var(--kw-gray2); background: #fff; transition: all .2s;
+    box-shadow: var(--shadow-sm);
   }
-  .bot-chip:hover { border-color: var(--slack-purple); background: #FAF5FF; }
-  .bot-chip.active { border-color: var(--slack-purple); background: #F3EBFF; box-shadow: 0 0 0 1px var(--slack-purple); }
-  .bot-chip-emoji { font-size: 16px; line-height: 1; }
-  .bot-chip-name { font-size: 9px; font-weight: 700; color: var(--kw-gray4); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bot-chip:hover { border-color: var(--slack-purple); background: #F6F0FF; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .bot-chip.active { border-color: var(--slack-purple); background: #F3EBFF; box-shadow: 0 0 0 2px var(--slack-purple), var(--shadow-sm); }
+  .bot-chip-emoji { font-size: 20px; line-height: 1; }
+  .bot-chip-name { font-size: 10px; font-weight: 700; color: var(--kw-gray4); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bot-chip.active .bot-chip-name { color: var(--slack-purple); }
 
   /* ─── Template Cards ─── */
-  .tpl-row { display: flex; gap: 4px; margin-top: 4px; }
+  .tpl-row { display: flex; gap: 6px; margin-top: 6px; }
   .tpl-card {
-    flex: 1; padding: 8px 6px; border-radius: 6px; cursor: pointer;
-    border: 1.5px solid var(--kw-gray2); background: #fff; transition: all .15s; text-align: center;
+    flex: 1; padding: 10px 8px; border-radius: 8px; cursor: pointer;
+    border: 1.5px solid var(--kw-gray2); background: #fff; transition: all .2s; text-align: center;
+    box-shadow: var(--shadow-sm);
   }
-  .tpl-card:hover { border-color: var(--kw-yellow); background: #FFFDF0; }
-  .tpl-card.active { border-color: var(--kw-yellow); background: #FFF9DB; box-shadow: 0 0 0 1px var(--kw-yellow); }
-  .tpl-card-title { font-size: 10px; font-weight: 700; color: var(--kw-ink); }
-  .tpl-card-desc { font-size: 9px; color: var(--kw-gray4); margin-top: 1px; }
+  .tpl-card:hover { border-color: var(--kw-yellow-dark); background: var(--kw-yellow-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .tpl-card.active { border-color: var(--kw-yellow-dark); background: var(--kw-yellow-light); box-shadow: 0 0 0 2px var(--kw-yellow), var(--shadow-sm); }
+  .tpl-card-title { font-size: 11px; font-weight: 700; color: var(--kw-ink); }
+  .tpl-card-desc { font-size: 9px; color: var(--kw-gray4); margin-top: 2px; }
 
   /* ─── Convert Button ─── */
   .convert-bar {
-    padding: 10px 12px; border-top: 1px solid var(--kw-border); background: #fff;
+    padding: 12px 16px; border-top: 1px solid var(--kw-gray2); background: #fff;
   }
   .btn-convert {
-    width: 100%; padding: 10px; border: none; border-radius: 8px;
-    background: var(--slack-purple); color: #fff; font-size: 14px; font-weight: 700;
-    cursor: pointer; transition: background .15s;
+    width: 100%; padding: 12px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--slack-purple) 0%, var(--slack-purple-light) 100%);
+    color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .2s; box-shadow: var(--shadow-md);
   }
-  .btn-convert:hover { background: #611f69; }
-  .btn-convert:active { transform: scale(0.98); }
+  .btn-convert:hover { box-shadow: var(--shadow-lg); filter: brightness(1.1); }
+  .btn-convert:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
 
   /* ─── Right Panel: Output ─── */
-  .output-panel { flex: 1; display: flex; flex-direction: column; background: var(--kw-gray1); }
+  .output-panel { flex: 1; display: flex; flex-direction: column; background: var(--kw-gray1); border-radius: 0 12px 12px 0; }
 
   /* ─── Tabs ─── */
   .tabs {
-    display: flex; border-bottom: 1px solid var(--kw-border); background: #fff; flex-shrink: 0;
+    display: flex; border-bottom: 1px solid var(--kw-gray2); background: #fff; flex-shrink: 0;
+    border-radius: 0 12px 0 0;
   }
   .tab {
-    flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 700;
-    cursor: pointer; border-bottom: 2px solid transparent; color: var(--kw-gray4);
-    transition: all .15s;
+    flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 700;
+    cursor: pointer; border-bottom: 3px solid transparent; color: var(--kw-gray4);
+    transition: all .2s;
   }
-  .tab.active { color: var(--kw-dark); border-bottom-color: var(--kw-yellow); }
-  .tab:hover { color: var(--kw-dark); }
+  .tab.active { color: var(--slack-purple); border-bottom-color: var(--slack-purple); }
+  .tab:hover { color: var(--kw-dark); background: var(--kw-gray1); }
 
   /* ─── Preview ─── */
-  .preview-wrap { flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center; }
+  .preview-wrap {
+    flex: 1; overflow-y: auto; padding: 24px;
+    display: flex; justify-content: center;
+    background: linear-gradient(180deg, var(--kw-gray1) 0%, #E8E7EC 100%);
+  }
   .chat-bg { width: 100%; max-width: 420px; }
   .bot-row { display: flex; gap: 8px; }
   .bot-avatar { width: 36px; height: 36px; border-radius: 12px; background: var(--kw-yellow); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
@@ -175,10 +193,11 @@
   .json-output:focus { outline: none; }
   .json-actions { padding: 8px 12px; border-top: 1px solid var(--kw-border); background: #fff; display: flex; gap: 6px; }
   .btn-copy {
-    flex: 1; padding: 8px; border: none; border-radius: 6px;
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
     background: var(--kw-yellow); color: var(--kw-dark); font-weight: 700; font-size: 12px; cursor: pointer;
+    transition: all .2s; box-shadow: var(--shadow-sm);
   }
-  .btn-copy:hover { background: #e6b800; }
+  .btn-copy:hover { background: var(--kw-yellow-dark); box-shadow: var(--shadow-md); color: #fff; }
 
   /* ─── Warnings Panel ─── */
   .warnings-panel { flex: 1; overflow-y: auto; padding: 12px; }
@@ -241,6 +260,15 @@
     font-size: 13px; font-weight: 600; opacity: 0; transition: all .3s; pointer-events: none; z-index: 999;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ─── Footer ─── */
+  .app-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px; background: var(--kw-dark); color: rgba(255,255,255,.45);
+    font-size: 11px; flex-shrink: 0;
+  }
+  .footer-note { line-height: 1.5; }
+  .footer-version { font-family: 'SF Mono', monospace; font-size: 10px; color: rgba(255,255,255,.3); }
 </style>
 </head>
 <body>
@@ -359,6 +387,12 @@
     </div>
   </div>
 </div>
+
+<!-- Footer -->
+<footer class="app-footer">
+  <div class="footer-note">본 서비스는 prototype이며, 변환 후 테스트 발송을 권장합니다.</div>
+  <div class="footer-version">2026.03.18.15:58</div>
+</footer>
 
 <div class="toast" id="toast"></div>
 
