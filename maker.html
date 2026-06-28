@@ -8,33 +8,31 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --kw-yellow:   #FFBE00;
-      --kw-yellow-d: #E5AB00;
-      --kw-dark:     #1B1A17;
+      /* ── 카카오워크 BI 공식 팔레트 (두 파일 동일값) ── */
+      --kw-navy: #001469; --kw-navy-dark: #000D4A; --kw-navy-tint: #EEF1FB; --kw-navy-text: #1E2A5A;
+      --kw-yellow: #FFE100; --kw-yellow-light: #FFF6B8; --kw-yellow-dark: #CCB400; --kw-yellow-d: #CCB400;
+      --kw-blue: #0082FF; --kw-red: #FF6E6E; --kw-green: #00BEBE;
+      --kw-dark: #1A1A1A; --kw-ink: #1A1A1A;
+      --kw-gray1: #F4F4F6; --kw-gray2: #EAEAED; --kw-gray3: #D2D2D8; --kw-gray4: #9A9AA8;
+      --kw-border: #E2E2E8;
+      /* ── 메이커 전용 ── */
       --kw-dark2:    #2C2B27;
-      --kw-ink:      #1A1A1A;
-      --kw-gray1:    #F4F4F6;
-      --kw-gray2:    #EAEAED;
-      --kw-gray3:    #D2D2D8;
-      --kw-gray4:    #9A9AA8;
-      --kw-border:   #E2E2E8;
-      --kw-chat-bg:  #D5D8E0;
-      --kw-red:      #C62828;
-      --kw-blue:     #1565C0;
+      --kw-chat-bg:  #EDEEF1;
     }
 
     /* ─── Global Nav ─── */
     .gnb {
-      display: flex; align-items: center; background: #4A154B; flex-shrink: 0;
-      padding: 0 20px; gap: 4px; height: 44px;
+      display: flex; align-items: center; background: var(--kw-navy); flex-shrink: 0;
+      padding: 0 20px; gap: 4px; height: 36px;
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,.08);
     }
     .gnb-brand { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.55); margin-right: 16px; letter-spacing: 0.8px; }
     .gnb-link {
-      padding: 8px 16px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.6);
-      text-decoration: none; border-radius: 8px; transition: all .2s;
+      padding: 5px 14px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.78);
+      text-decoration: none; border-radius: 7px; transition: all .2s;
     }
     .gnb-link:hover { color: #fff; background: rgba(255,255,255,.1); }
-    .gnb-link.active { color: #fff; background: #611F69; font-weight: 700; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+    .gnb-link.active { color: var(--kw-yellow); background: rgba(255,255,255,.08); font-weight: 700; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', Helvetica, sans-serif;
@@ -48,7 +46,7 @@
 
     /* ─── App Header ─── */
     .app-header {
-      background: var(--kw-dark);
+      background: var(--kw-navy);
       padding: 0 20px;
       height: 52px;
       display: flex;
@@ -215,11 +213,18 @@
     .block-badge {
       font-size: 11px;
       font-weight: 800;
-      padding: 2px 9px;
-      border-radius: 20px;
-      background: var(--kw-dark);
-      color: var(--kw-yellow);
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--kw-gray2);
+      color: var(--kw-navy-text);
+      border: 1px solid var(--kw-border);
       letter-spacing: 0.2px;
+    }
+    /* 드래그(이동) 중에만 활성 신호로 네이비+옐로 */
+    .block-card.drag-over .block-badge {
+      background: var(--kw-navy);
+      color: var(--kw-yellow);
+      border-color: var(--kw-navy);
     }
     .card-controls { display: flex; gap: 2px; }
     .ctrl-btn {
@@ -371,7 +376,8 @@
       border-radius: 2px 12px 12px 12px;
       overflow: hidden;
       max-width: 275px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.05);
     }
     .bubble-empty {
       padding: 28px 16px;
@@ -382,13 +388,13 @@
     }
 
     /* ── Preview Block Styles ── */
-    .pv-header { padding: 11px 14px; font-size: 14px; font-weight: 800; line-height: 1.3; }
+    .pv-header { padding: 12px 14px; font-size: 14px; font-weight: 800; line-height: 1.3; }
     .pv-header.white  { background: #fff; color: var(--kw-ink); border-bottom: 1px solid #f0f0f0; }
     .pv-header.blue   { background: var(--kw-blue); color: #fff; }
     .pv-header.red    { background: var(--kw-red);  color: #fff; }
     .pv-header.yellow { background: var(--kw-yellow); color: var(--kw-dark); }
 
-    .pv-text { padding: 9px 14px; font-size: 13px; line-height: 1.6; color: #222; word-break: break-word; }
+    .pv-text { padding: 11px 14px; font-size: 13px; line-height: 1.6; color: #222; word-break: break-word; }
 
     .pv-image { width: 100%; aspect-ratio: 2/1; object-fit: cover; display: block; }
     .pv-image-ph {
@@ -403,7 +409,7 @@
     .pv-btn-wrap { padding: 7px 14px; }
     .pv-btn {
       display: block; width: 100%;
-      padding: 8px 12px;
+      padding: 11px 12px;
       border-radius: 7px;
       font-size: 13px; font-weight: 700;
       text-align: center;
@@ -662,6 +668,41 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--kw-gray3); border-radius: 4px; }
 
+    /* ─── P3: Inline SVG 아이콘 정렬 ─── */
+    svg.ic { vertical-align: middle; flex-shrink: 0; }
+    .block-badge { display: inline-flex; align-items: center; gap: 4px; }
+    .block-badge svg.ic { color: var(--kw-gray4); }              /* 배지 아이콘은 중립 그레이 */
+    .block-card.drag-over .block-badge svg.ic { color: var(--kw-yellow); }
+    .gnb-link { display: inline-flex; align-items: center; gap: 6px; }
+    .empty-icon { color: #c4c4cc; line-height: 0; }
+    .bot-avatar { color: var(--kw-yellow); }                     /* 다크 아바타 위 옐로 봇 아이콘 */
+    .ai-gen-label svg.ic { color: #B8860B; }
+    .preset-thumb span { display: flex; align-items: center; justify-content: center; gap: 3px; }
+
+    /* ─── P3: 접근성 — focus-visible 링 (네이비 / 다크배경 GNB는 옐로) ─── */
+    .tab:focus-visible, .ctrl-btn:focus-visible, .btn-header:focus-visible,
+    .btn-copy:focus-visible, .btn-dl:focus-visible, .btn-eye:focus-visible,
+    .btn-send:focus-visible, .btn-ai-gen:focus-visible, .btn-xs:focus-visible,
+    .add-btn:focus-visible, .palette-item:focus-visible, .chip:focus-visible,
+    .preset-thumb:focus-visible, .tpl-item:focus-visible,
+    .fi:focus-visible, .fs:focus-visible, .fta:focus-visible {
+      outline: none; box-shadow: 0 0 0 3px rgba(0,20,105,.30);
+    }
+    .gnb-link:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255,225,0,.5); }
+
+    /* ─── P3: 대비 AA — 캡션 색 상향 ─── */
+    .bot-name { color: var(--kw-navy-text); }
+    .pv-ctx-text { color: var(--kw-navy-text); }
+    .palette-item-desc { color: var(--kw-navy-text); }
+
+    /* ─── P3: 타이포 최소 크기 (11px 미만 → 11px) ─── */
+    .section-label { font-size: 11px; }
+    .coming-soon-badge { font-size: 11px; }
+    .val-group-label { font-size: 11px; }
+    .curl-code { font-size: 11px; }
+    .ai-gen-hint { font-size: 11px; }
+    .preset-thumb span { font-size: 11px; }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -670,8 +711,8 @@
 <!-- Global Nav -->
 <nav class="gnb">
   <span class="gnb-brand">KW TOOLS</span>
-  <a class="gnb-link" href="index.html">🔄 Converter</a>
-  <a class="gnb-link active" href="maker.html">🔧 Maker</a>
+  <a class="gnb-link" href="index.html"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg> Converter</a>
+  <a class="gnb-link active" href="maker.html"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5l-9 9a2.8 2.8 0 0 1-4-4z"/></svg> Maker</a>
 </nav>
 
 <!-- ─── Header ─── -->
@@ -687,7 +728,7 @@
   </div>
   <div class="header-actions">
     <button class="btn-header" onclick="clearAll()">초기화</button>
-    <button class="btn-header accent" onclick="toggleTemplateMenu(event)">📋 템플릿</button>
+    <button class="btn-header accent" onclick="toggleTemplateMenu(event)"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M9 3h6v4H9z"/></svg> 템플릿</button>
   </div>
 </div>
 
@@ -712,7 +753,7 @@
   <!-- ─── Middle Editor ─── -->
   <div class="editor-panel">
     <div class="notif-bar">
-      <label>📣 알림 텍스트 <span style="color:#E53935;font-weight:900">*필수</span> — 채팅방 목록 및 푸시 알림에 표시</label>
+      <label><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> 알림 텍스트 <span style="color:#E53935;font-weight:900">*필수</span> — 채팅방 목록 및 푸시 알림에 표시</label>
       <input type="text" class="fi" id="notifText"
         placeholder="예: 새로운 공지사항이 있습니다."
         value="새로운 메시지가 도착했습니다."
@@ -720,7 +761,7 @@
     </div>
     <div class="block-scroll" id="blockScroll">
       <div class="empty-state" id="emptyState">
-        <div class="empty-icon">🧱</div>
+        <div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg></div>
         <div class="empty-title">블럭을 추가해보세요</div>
         <div class="empty-desc">왼쪽에서 블럭 유형을 클릭하거나<br>상단 템플릿을 선택해 시작하세요.</div>
       </div>
@@ -740,7 +781,7 @@
     <!-- Preview -->
     <div class="preview-wrap" id="panel-preview">
       <div class="chat-row">
-        <div class="bot-avatar">🤖</div>
+        <div class="bot-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="8" width="14" height="10" rx="3"/><path d="M12 8V5M8 3h8"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/></svg></div>
         <div class="bot-body">
           <div class="bot-name">카카오워크 봇</div>
           <div class="message-bubble" id="previewBubble">
@@ -754,8 +795,8 @@
     <div class="json-panel hidden" id="panel-json">
       <textarea class="json-output" id="jsonOut" readonly spellcheck="false"></textarea>
       <div class="json-actions">
-        <button class="btn-copy" onclick="copyJSON()">📋 JSON 복사하기</button>
-        <button class="btn-dl" onclick="downloadJSON()" title="JSON 파일로 저장">⬇</button>
+        <button class="btn-copy" onclick="copyJSON()"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg> JSON 복사하기</button>
+        <button class="btn-dl" onclick="downloadJSON()" title="JSON 파일로 저장" aria-label="JSON 파일로 저장"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
       </div>
     </div>
 
@@ -764,12 +805,12 @@
 
       <!-- API Key -->
       <div class="send-section">
-        <div class="send-section-title">🔑 App Key (봇 API 키)</div>
+        <div class="send-section-title"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M11 11l8-8M17 5l2 2M15 7l2 2"/></svg> App Key (봇 API 키)</div>
         <div class="send-key-row">
           <input class="fi" id="sendAppKey" type="password" placeholder="발급받은 App Key를 입력하세요"
             oninput="saveAppKey()">
-          <button class="btn-eye" id="btnEye" onclick="toggleKeyVisibility()" title="보기/숨기기">👁</button>
-          <button class="btn-eye" onclick="clearAppKey()" title="저장된 키 삭제">🗑</button>
+          <button class="btn-eye" id="btnEye" onclick="toggleKeyVisibility()" title="보기/숨기기" aria-label="App Key 표시/숨기기"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="btn-eye" onclick="clearAppKey()" title="저장된 키 삭제" aria-label="저장된 App Key 삭제"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
         </div>
         <div class="send-hint">
           카카오워크 관리자 페이지 → 봇 관리 → 앱 정보에서 확인할 수 있습니다.<br>
@@ -781,7 +822,7 @@
 
       <!-- Recipient -->
       <div class="send-section">
-        <div class="send-section-title">📨 수신자</div>
+        <div class="send-section-title"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> 수신자</div>
         <input class="fi" id="sendEmail" type="text" placeholder="예: user1@company.com, user2@company.com">
         <div class="send-hint">카카오워크 <strong>가입 시 인증한 이메일</strong>을 입력하세요. 쉼표(,)로 구분하면 여러 명에게 발송됩니다.<br>프로필에 추가한 이메일은 동작하지 않습니다.</div>
       </div>
@@ -790,7 +831,8 @@
 
       <!-- Send button -->
       <button class="btn-send" id="btnSend" onclick="sendMessage()">
-        <span>📋 전송 가이드 생성하기</span>
+        <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        <span>전송 가이드 생성하기</span>
       </button>
 
       <!-- Result -->
@@ -819,30 +861,76 @@ let dragSrc = null;        // 카드 재정렬 드래그 소스 인덱스
 let paletteDragType = null; // 팔레트에서 드래그 중인 블럭 타입
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INLINE SVG ICONS (P3) — 외부 라이브러리 0, 색은 부모 currentColor 상속
+//   svgIcon(key,size) 로 생성 / 정적 마크업은 직접 인라인. 두 파일(maker·index) 동일 세트.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const ICON_PATHS = {
+  header:'<path d="M6 4v16M18 4v16M6 12h12"/>',
+  text:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+  image_ai:'<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/><path d="M19 14l.7 1.9L21.6 17l-1.9.7L19 19.6l-.7-1.9L16.4 17l1.9-.7z"/>',
+  image_upload:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  divider:'<path d="M4 12h16"/>',
+  button:'<rect x="3" y="8" width="18" height="8" rx="4"/>',
+  action:'<rect x="3" y="9" width="8" height="6" rx="3"/><rect x="13" y="9" width="8" height="6" rx="3"/>',
+  description:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  section:'<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="14" y="8" width="5" height="5" rx="1"/><path d="M5 9h6M5 13h6"/>',
+  context:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  grip:'<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>',
+  up:'<path d="M12 19V5M5 12l7-7 7 7"/>',
+  down:'<path d="M12 5v14M5 12l7 7 7-7"/>',
+  close:'<path d="M18 6L6 18M6 6l12 12"/>',
+  template:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M9 3h6v4H9z"/>',
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  key:'<circle cx="8" cy="14" r="4"/><path d="M11 11l8-8M17 5l2 2M15 7l2 2"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+  bot:'<rect x="5" y="8" width="14" height="10" rx="3"/><path d="M12 8V5M8 3h8"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/>',
+  empty:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
+  convert:'<path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/>',
+  maker:'<path d="M14.7 6.3a4 4 0 0 0 5 5l-9 9a2.8 2.8 0 0 1-4-4z"/>',
+  meeting:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9"/>',
+  celebrate:'<path d="M3 21l5-9 4 4 4-7 5 12z"/>',
+  server:'<rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 7h.01M7 17h.01"/>',
+  nature:'<path d="M11 20A7 7 0 0 1 4 13c0-5 5-9 7-11 2 2 7 6 7 11a7 7 0 0 1-7 7zM11 20v-7"/>',
+};
+const ICON_FILL = new Set(['grip']); // stroke 대신 fill 로 그리는 아이콘
+function svgIcon(key, size = 16) {
+  const p = ICON_PATHS[key];
+  if (!p) return '';
+  const attrs = ICON_FILL.has(key)
+    ? 'fill="currentColor" stroke="none"'
+    : 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" ${attrs} aria-hidden="true">${p}</svg>`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // BLOCK META & DEFAULTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const BLOCK_META = [
-  { type: 'header',      emoji: '📌', name: '헤더',      desc: '메시지 최상단 제목' },
-  { type: 'text',             emoji: '📝', name: '텍스트',          desc: '일반 텍스트 내용' },
-  { type: 'image_link_ai',   emoji: '✨', name: '이미지 (AI생성)',  desc: 'Gemini로 이미지 생성' },
-  { type: 'image_link_upload', emoji: '📁', name: '이미지 (업로드)', desc: '로컬 파일 업로드' },
-  { type: 'divider',          emoji: '➖', name: '구분선',          desc: '블럭 사이 구분선' },
-  { type: 'button',      emoji: '🔘', name: '버튼',       desc: '단일 클릭 버튼' },
-  { type: 'action',      emoji: '🔲', name: '버튼 그룹',  desc: '2~3개 버튼 묶음' },
-  { type: 'description', emoji: '📋', name: '설명',       desc: '레이블 + 내용 쌍' },
-  { type: 'section',     emoji: '📄', name: '섹션',       desc: '텍스트 + 썸네일 이미지' },
-  { type: 'context',     emoji: '💬', name: '컨텍스트',   desc: '아이콘 + 보조 텍스트' },
+  { type: 'header',      iconKey: 'header',       name: '헤더',      desc: '메시지 최상단 제목' },
+  { type: 'text',             iconKey: 'text',         name: '텍스트',          desc: '일반 텍스트 내용' },
+  { type: 'image_link_ai',   iconKey: 'image_ai',     name: '이미지 (AI생성)',  desc: 'Gemini로 이미지 생성' },
+  { type: 'image_link_upload', iconKey: 'image_upload', name: '이미지 (업로드)', desc: '로컬 파일 업로드' },
+  { type: 'divider',          iconKey: 'divider',      name: '구분선',          desc: '블럭 사이 구분선' },
+  { type: 'button',      iconKey: 'button',       name: '버튼',       desc: '단일 클릭 버튼' },
+  { type: 'action',      iconKey: 'action',       name: '버튼 그룹',  desc: '2~3개 버튼 묶음' },
+  { type: 'description', iconKey: 'description',   name: '설명',       desc: '레이블 + 내용 쌍' },
+  { type: 'section',     iconKey: 'section',       name: '섹션',       desc: '텍스트 + 썸네일 이미지' },
+  { type: 'context',     iconKey: 'context',       name: '컨텍스트',   desc: '아이콘 + 보조 텍스트' },
 ];
 const metaMap = Object.fromEntries(BLOCK_META.map(m => [m.type, m]));
 // image_link_ai / image_link_upload 둘 다 실제 블럭 type은 'image_link' 이므로 역방향 조회용
-metaMap['image_link'] = { emoji: '🖼', name: '이미지' };
+metaMap['image_link'] = { iconKey: 'image_upload', name: '이미지' };
 
 const IMAGE_PRESETS = [
-  { name: '공지',  emoji: '📢', url: 'https://picsum.photos/id/180/800/400' },
-  { name: '미팅',  emoji: '🤝', url: 'https://picsum.photos/id/1/800/400' },
-  { name: '축하',  emoji: '🎉', url: 'https://picsum.photos/id/225/800/400' },
-  { name: '서버',  emoji: '🖥', url: 'https://picsum.photos/id/60/800/400' },
-  { name: '자연',  emoji: '🌿', url: 'https://picsum.photos/id/10/800/400' },
+  { name: '공지',  iconKey: 'bell',      url: 'https://placehold.co/800x400/001469/ffe100/png?text=Notice' },
+  { name: '미팅',  iconKey: 'meeting',   url: 'https://placehold.co/800x400/0082ff/ffffff/png?text=Meeting' },
+  { name: '축하',  iconKey: 'celebrate', url: 'https://placehold.co/800x400/ffe100/001469/png?text=Congrats' },
+  { name: '서버',  iconKey: 'server',    url: 'https://placehold.co/800x400/000d4a/ffe100/png?text=Server' },
+  { name: '자연',  iconKey: 'nature',    url: 'https://placehold.co/800x400/00bebe/ffffff/png?text=Nature' },
 ];
 
 function makeDefault(type) {
@@ -935,13 +1023,13 @@ function buildCard(b, i) {
   <div class="block-card" data-idx="${i}">
     <div class="card-header" draggable="true">
       <div class="card-header-left">
-        <span class="drag-dots">⠿</span>
-        <span class="block-badge">${meta.emoji} ${meta.name}</span>
+        <span class="drag-dots">${svgIcon('grip')}</span>
+        <span class="block-badge">${svgIcon(meta.iconKey)} ${meta.name}</span>
       </div>
       <div class="card-controls">
-        ${!isFirst ? `<button class="ctrl-btn" onclick="moveBlock(${i},-1)" title="위로">↑</button>` : ''}
-        ${!isLast  ? `<button class="ctrl-btn" onclick="moveBlock(${i},1)"  title="아래로">↓</button>` : ''}
-        <button class="ctrl-btn del" onclick="removeBlock(${i})" title="삭제">✕</button>
+        ${!isFirst ? `<button class="ctrl-btn" onclick="moveBlock(${i},-1)" title="위로" aria-label="블럭 위로 이동">${svgIcon('up')}</button>` : ''}
+        ${!isLast  ? `<button class="ctrl-btn" onclick="moveBlock(${i},1)"  title="아래로" aria-label="블럭 아래로 이동">${svgIcon('down')}</button>` : ''}
+        <button class="ctrl-btn del" onclick="removeBlock(${i})" title="삭제" aria-label="블럭 삭제">${svgIcon('close')}</button>
       </div>
     </div>
     <div class="card-body">${buildForm(b, i)}</div>
@@ -963,7 +1051,7 @@ function buildForm(b, i) {
       <div class="fg">
         <label class="fl">배경 색상</label>
         <div class="chip-row">
-          ${[['white','#fff','#333','흰색'],['blue','#1565C0','#fff','파랑'],['red','#C62828','#fff','빨강'],['yellow','#FFBE00','#333','노랑']].map(([s,bg,fg,label])=>
+          ${[['white','#fff','#333','흰색'],['blue','#1565C0','#fff','파랑'],['red','#C62828','#fff','빨강'],['yellow','#FFE100','#333','노랑']].map(([s,bg,fg,label])=>
             `<span class="chip ${b.style===s?'selected':''}"
               style="background:${bg};color:${fg}"
               onclick="blocks[${i}].style='${s}';syncAll()">${label}</span>`
@@ -988,7 +1076,7 @@ function buildForm(b, i) {
               <input class="fi" type="text" placeholder="생성 후 자동 입력됩니다" readonly>
             </div>
             <div class="ai-gen-wrap">
-              <div class="ai-gen-label">✨ Gemini AI 이미지 생성</div>
+              <div class="ai-gen-label">${svgIcon('image_ai')} Gemini AI 이미지 생성</div>
               <div class="ai-gen-key-row">
                 <input class="fi" type="password" placeholder="Gemini API Key">
               </div>
@@ -1013,7 +1101,7 @@ function buildForm(b, i) {
               <div class="preset-thumb ${b.url === p.url ? 'selected' : ''}"
                 onclick="selectPreset(${i}, ${pi})" title="${p.name}">
                 <img src="${p.url}" alt="${p.name}" loading="lazy">
-                <span>${p.emoji} ${p.name}</span>
+                <span>${svgIcon(p.iconKey, 13)} ${p.name}</span>
               </div>`).join('')}
           </div>
         </div>
@@ -1027,7 +1115,7 @@ function buildForm(b, i) {
         <div class="fg">
           <label class="fl">미리보기용 파일 업로드 <span style="color:#bbb;font-weight:400">(선택사항)</span></label>
           <label class="upload-label" for="imgFile_${i}">
-            ${b._preview ? '✅ 미리보기 이미지 업로드됨 — 다시 선택하려면 클릭' : '📁 클릭하여 이미지 파일 선택'}
+            ${svgIcon('image_upload')} ${b._preview ? '미리보기 이미지 업로드됨 — 다시 선택하려면 클릭' : '클릭하여 이미지 파일 선택'}
           </label>
           <input type="file" id="imgFile_${i}" class="upload-input" accept="image/*"
             onchange="handleImageUpload(${i}, this)">
@@ -1293,6 +1381,18 @@ function validate() {
       warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 그룹(Action)에는 최대 3개의 버튼만 허용됩니다.` });
   });
 
+  // 버튼/액션 링크 URL 필수 — open_system_browser/open_inapp_browser는 URL 필수 (빈/무효 시 죽은 버튼·전송 실패)
+  blocks.forEach((b, i) => {
+    if (b.type === 'button' && !safeUrl(b.action?.value))
+      warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼(Button)의 링크 URL이 비어있거나 유효하지 않습니다 (http/https 필수).` });
+    if (b.type === 'action') {
+      (b.elements||[]).forEach((el, j) => {
+        if (!safeUrl(el.action?.value))
+          warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 그룹(Action)의 ${j+1}번째 버튼 링크 URL이 비어있거나 유효하지 않습니다 (http/https 필수).` });
+      });
+    }
+  });
+
   // ── 글자수 제한 (스펙 위반) ──────────────────────
   blocks.forEach((b, i) => {
     if (b.type === 'header' && b.text?.length > 20)
@@ -1480,6 +1580,7 @@ function downloadJSON() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // GEMINI AI IMAGE GENERATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// [준비중] AI 이미지 생성 스텁 — 현재 UI 비활성, 호출 경로 없음. 활성화 시 재검(엔드포인트/모델 갱신 필요).
 async function generateImage(i) {
   const apiKey = document.getElementById(`geminiKey_${i}`)?.value.trim()
                || localStorage.getItem('gemini_api_key');
@@ -1542,10 +1643,12 @@ function handleImageUpload(i, input) {
     blocks[i]._preview = e.target.result;
     updateOutput();
     const label = document.querySelector(`label[for="imgFile_${i}"]`);
-    if (label) label.textContent = '✅ 미리보기 이미지 업로드됨 — 다시 선택하려면 클릭';
+    if (label) label.innerHTML = svgIcon('image_upload') + ' 미리보기 이미지 업로드됨 — 다시 선택하려면 클릭';
     toast('미리보기 이미지가 업로드되었습니다! 🖼');
   };
   reader.readAsDataURL(file);
+  // 동일 파일 재선택 시에도 onchange가 다시 발화하도록 value 초기화 (reader는 이미 file 참조 보유)
+  input.value = '';
 }
 
 function selectPreset(i, presetIdx) {
@@ -1575,13 +1678,13 @@ function toggleKeyVisibility() {
   const inp = document.getElementById('sendAppKey');
   const isHidden = inp.type === 'password';
   inp.type = isHidden ? 'text' : 'password';
-  document.getElementById('btnEye').textContent = isHidden ? '🙈' : '👁';
+  document.getElementById('btnEye').innerHTML = svgIcon('eye');
 }
 function clearAppKey() {
   const inp = document.getElementById('sendAppKey');
   inp.value = '';
   inp.type = 'password';
-  document.getElementById('btnEye').textContent = '👁';
+  document.getElementById('btnEye').innerHTML = svgIcon('eye');
   localStorage.removeItem('kw_app_key');
   toast('App Key가 삭제되었습니다.');
 }
@@ -1612,7 +1715,8 @@ function buildCurlGuide(appKey, emails) {
   const emptyImgCount = cleanedBlocks.filter(
     cb => cb.type === 'image_link' && !cb.url
   ).length;
-  const notifText = document.getElementById('notifText').value || '새 메시지';
+  // notifText fallback 제거 — JSON탭(renderJSON)과 동일하게 raw 값 사용 (표시=전송 일치). 빈값은 validate() error로 차단됨.
+  const notifText = document.getElementById('notifText').value;
 
   const emptyImgWarning = emptyImgCount > 0 ? `
     <div class="send-status" style="background:#FFF0F0;color:#8B1A1A;border:1px solid #F5A0A0;border-radius:8px;padding:10px 12px;font-size:12px;margin-top:2px;">
@@ -1715,6 +1819,9 @@ function sendMessage() {
   const invalid = emails.filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
   if (invalid.length) { toast(`올바르지 않은 이메일: ${invalid[0]}`); return; }
 
+  const specErrors = validate().filter(w => w.level === 'error');
+  if (specErrors.length) { toast(`스펙 오류를 먼저 해결해주세요: ${specErrors[0].msg}`); switchTab('preview'); return; }
+
   setResult(buildCurlGuide(appKey, emails));
 }
 
@@ -1765,7 +1872,7 @@ function safeUrl(url) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const TEMPLATES = [
   {
-    name: '📢 공지사항', desc: '일시·장소·대상 안내',
+    name: '공지사항', iconKey: 'bell', desc: '일시·장소·대상 안내',
     notif: '새로운 공지사항이 있습니다.',
     blocks: [
       { type:'header', text:'📢 공지사항', style:'blue' },
@@ -1782,11 +1889,11 @@ const TEMPLATES = [
     ]
   },
   {
-    name: '✅ 승인 요청', desc: '결재·승인 요청 메시지',
+    name: '승인 요청', iconKey: 'description', desc: '결재·승인 요청 메시지',
     notif: '승인이 필요한 요청이 있습니다.',
     blocks: [
       { type:'header', text:'휴가 신청 승인 요청', style:'yellow' },
-      { type:'section', content:{ type:'text', text:'김철수님이 휴가 신청을 요청했습니다.\n검토 후 승인 또는 반려해 주세요.' }, accessory:{ type:'image_link', url:'https://i.pravatar.cc/100?img=3' } },
+      { type:'section', content:{ type:'text', text:'김철수님이 휴가 신청을 요청했습니다.\n검토 후 승인 또는 반려해 주세요.' }, accessory:{ type:'image_link', url:'https://ui-avatars.com/api/?name=Kim+Chulsoo&background=001469&color=fff&bold=true&size=128' } },
       { type:'divider' },
       { type:'description', term:'신청자', accent:true, content:{ type:'text', text:'김철수 (개발팀)' } },
       { type:'description', term:'기간',   accent:true, content:{ type:'text', text:'2024.03.20 ~ 2024.03.22 (3일)' } },
@@ -1799,7 +1906,7 @@ const TEMPLATES = [
     ]
   },
   {
-    name: '📅 일정 알림', desc: '오늘의 주요 일정',
+    name: '일정 알림', iconKey: 'meeting', desc: '오늘의 주요 일정',
     notif: '오늘의 주요 일정을 알려드립니다.',
     blocks: [
       { type:'header', text:'📅 오늘의 일정', style:'white' },
@@ -1813,7 +1920,7 @@ const TEMPLATES = [
     ]
   },
   {
-    name: '🔔 시스템 점검', desc: '서비스 중단 사전 안내',
+    name: '시스템 점검', iconKey: 'server', desc: '서비스 중단 사전 안내',
     notif: '시스템 점검 안내',
     blocks: [
       { type:'header', text:'⚠️ 시스템 점검 안내', style:'red' },
@@ -1827,7 +1934,7 @@ const TEMPLATES = [
     ]
   },
   {
-    name: '📊 설문조사 요청', desc: '의견 수렴 · 만족도 조사',
+    name: '설문조사 요청', iconKey: 'section', desc: '의견 수렴 · 만족도 조사',
     notif: '여러분의 소중한 의견을 들려주세요!',
     blocks: [
       { type:'header', text:'📊 설문조사 참여 요청', style:'blue' },
@@ -1846,11 +1953,11 @@ const TEMPLATES = [
     ]
   },
   {
-    name: '🎉 칭찬 · 감사 메시지', desc: '팀원 칭찬 및 감사 전달',
+    name: '칭찬 · 감사 메시지', iconKey: 'celebrate', desc: '팀원 칭찬 및 감사 전달',
     notif: '칭찬합니다! 🎉',
     blocks: [
       { type:'header', text:'🏆 이 달의 MVP', style:'yellow' },
-      { type:'section', content:{ type:'text', text:'이번 달 팀에 큰 기여를 한 분을 소개합니다!\n뛰어난 성과와 동료에 대한 배려로 팀 전체에 긍정적인 영향을 주었습니다.' }, accessory:{ type:'image_link', url:'https://i.pravatar.cc/100?img=12' } },
+      { type:'section', content:{ type:'text', text:'이번 달 팀에 큰 기여를 한 분을 소개합니다!\n뛰어난 성과와 동료에 대한 배려로 팀 전체에 긍정적인 영향을 주었습니다.' }, accessory:{ type:'image_link', url:'https://ui-avatars.com/api/?name=Hong+Gildong&background=001469&color=fff&bold=true&size=128' } },
       { type:'divider' },
       { type:'description', term:'이름',   accent:true, content:{ type:'text', text:'홍길동 (개발팀 시니어 개발자)' } },
       { type:'description', term:'선정 이유', accent:true, content:{ type:'text', text:'신규 서비스 출시를 위해 야근을 마다하지 않으며\n팀원들을 적극적으로 도와 성공적인 런칭을 이끌었습니다.' } },
@@ -1900,7 +2007,7 @@ function init() {
   document.getElementById('palette').innerHTML = BLOCK_META.map(m => {
     if (m.type === 'image_link_ai') return `
       <div class="palette-item coming-soon">
-        <div class="palette-item-name">${m.emoji} ${m.name}<span class="coming-soon-badge">준비중</span></div>
+        <div class="palette-item-name">${svgIcon(m.iconKey)} ${m.name}<span class="coming-soon-badge">준비중</span></div>
         <div class="palette-item-desc">${m.desc}</div>
       </div>`;
     return `
@@ -1908,7 +2015,7 @@ function init() {
            ondragstart="paletteDragStart(event,'${m.type}')"
            ondragend="paletteDragEnd(event)"
            onclick="addBlock('${m.type}')">
-        <div class="palette-item-name">${m.emoji} ${m.name}</div>
+        <div class="palette-item-name">${svgIcon(m.iconKey)} ${m.name}</div>
         <div class="palette-item-desc">${m.desc}</div>
       </div>`;
   }).join('');
@@ -1916,7 +2023,7 @@ function init() {
   // Sidebar template list
   document.getElementById('template-list').innerHTML = TEMPLATES.map((t, i) => `
     <div class="palette-item" onclick="loadTemplate(${i})">
-      <div class="palette-item-name" style="font-size:12px">${t.name}</div>
+      <div class="palette-item-name" style="font-size:12px">${svgIcon(t.iconKey)} ${t.name}</div>
       <div class="palette-item-desc">${t.desc}</div>
     </div>
   `).join('');
@@ -1924,7 +2031,7 @@ function init() {
   // Header template dropdown
   document.getElementById('tplItems').innerHTML = TEMPLATES.map((t, i) => `
     <div class="tpl-item" onclick="loadTemplate(${i})">
-      <div class="tpl-item-name">${t.name}</div>
+      <div class="tpl-item-name">${svgIcon(t.iconKey)} ${t.name}</div>
       <div class="tpl-item-desc">${t.desc}</div>
     </div>
   `).join('');
