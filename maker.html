@@ -1267,7 +1267,7 @@ function buildForm(b, i) {
       <div class="fg">
         <label class="fl">텍스트 내용 <span style="color:#bbb;font-weight:400">(최대 500자)</span></label>
         <textarea class="fta" maxlength="500" id="textMirror_${i}" ${hasInlines ? 'readonly' : ''}
-          oninput="blocks[${i}].text=this.value;updateOutput()">${eh(b.text)}</textarea>
+          oninput="blocks[${i}].text=this.value;updateOutput()">${ehTa(b.text)}</textarea>
         <div class="hint">${hasInlines
           ? '서식 조각이 있으므로 이 값은 조각 텍스트를 이어붙인 결과로 자동 동기화됩니다 (스펙: 상위 text 와 inlines 의 text 는 동일해야 함).'
           : '줄바꿈(Enter)이 그대로 미리보기에 반영됩니다.'}</div>
@@ -1412,7 +1412,7 @@ function buildForm(b, i) {
       </div>
       <div class="fg">
         <label class="fl">내용 <span style="color:#bbb;font-weight:400">(최대 500자)</span></label>
-        <textarea class="fta" maxlength="500" oninput="blocks[${i}].content.text=this.value;updateOutput()">${eh(b.content?.text||'')}</textarea>
+        <textarea class="fta" maxlength="500" oninput="blocks[${i}].content.text=this.value;updateOutput()">${ehTa(b.content?.text||'')}</textarea>
       </div>
       <div class="fg">
         <label class="fc-label">
@@ -1424,7 +1424,7 @@ function buildForm(b, i) {
     case 'section': return `
       <div class="fg">
         <label class="fl">본문 텍스트</label>
-        <textarea class="fta" oninput="blocks[${i}].content.text=this.value;updateOutput()">${eh(b.content?.text||'')}</textarea>
+        <textarea class="fta" oninput="blocks[${i}].content.text=this.value;updateOutput()">${ehTa(b.content?.text||'')}</textarea>
       </div>
       <div class="fg">
         <label class="fl">썸네일 이미지 URL <span style="color:#bbb;font-weight:400">(선택, 우측 48×48)</span></label>
@@ -1508,7 +1508,7 @@ function buildInlineForm(n, i, ii, total) {
           <div class="fg">
             <label class="fl">텍스트 <span style="color:#bbb;font-weight:400">(줄바꿈 가능)</span></label>
             <textarea class="fta fta-sm"
-              oninput="setInlineField(${i},${ii},'text',this.value)">${eh(n.text)}</textarea>
+              oninput="setInlineField(${i},${ii},'text',this.value)">${ehTa(n.text)}</textarea>
           </div>`;
   switch (n.type) {
 
@@ -2285,6 +2285,14 @@ function eh(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+// <textarea> 초기값 전용 이스케이프.
+// HTML 파서는 <textarea> 여는 태그 직후의 개행(U+000A) 1개를 무조건 버린다
+// (HTML Standard, tree construction — "A start tag whose tag name is textarea").
+// 그래서 값이 "\n" 으로 시작하면 재렌더 시 표시값에서 개행 1개가 깎이고,
+// 그 상태로 사용자가 타이핑하면 oninput 이 깎인 value 를 데이터에 덮어써 영구 소실된다.
+// 상쇄용 개행 1개를 조건 없이 앞에 붙인다 — 파서가 정확히 1개만 먹으므로
+// 모든 입력에서 render→표시 왕복이 동일해진다 (값이 비어도, 개행으로 시작하지 않아도 안전).
+function ehTa(s) { return '\n' + eh(s); }
 // inline link 전용 — 공식 문서가 http·https 외에 mailto:·tel: 도 허용한다
 function safeInlineUrl(url) {
   if (!url) return '';

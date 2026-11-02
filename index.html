@@ -437,6 +437,10 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let kwBlocks = [];
 let warnings = [];
+// 변환 1회분 동안 쓰인 action.name 들 — name 은 '어느 버튼이 눌렸는지' 구분자라
+// 중복되면 구분이 깨진다. convertBlocks() 진입마다 초기화한다.
+let usedActionNames = new Set();
+let callbackNoticeDone = false;
 let selectedBot = -1;
 let selectedTpl = -1;
 
@@ -639,6 +643,8 @@ function extractText(obj) {
 function convertBlocks(slackBlocks) {
   const result = [];
   warnings = [];
+  usedActionNames = new Set();
+  callbackNoticeDone = false;
 
   if (!Array.isArray(slackBlocks)) {
     warnings.push({ type: 'error', msg: 'blocks 배열이 없습니다.' });
@@ -747,16 +753,7 @@ function convertBlock(b) {
         if (b.accessory && b.accessory.type === 'image') {
           results.push({ type: 'image_link', url: b.accessory.image_url || '' });
         } else if (b.accessory && b.accessory.type === 'button') {
-          const btnUrl = b.accessory.url;
-          if (btnUrl) {
-            results.push({
-              type: 'button', text: extractText(b.accessory.text),
-              style: mapStyle(b.accessory.style),
-              action: { type: 'open_system_browser', value: btnUrl }
-            });
-          } else {
-            warnings.push({ type: 'warn', msg: `section accessory 버튼 "${extractText(b.accessory.text)}"에 URL이 없어 제거됩니다.` });
-          }
+          results.push(slackButtonToKw(b.accessory, 'section accessory '));
         }
         return results;
       }
@@ -771,17 +768,7 @@ function convertBlock(b) {
       // section with accessory button → split
       if (b.accessory && b.accessory.type === 'button') {
         const textBlock = { type: 'text', text: extractText(b.text) };
-        const btnUrl = b.accessory.url;
-        if (btnUrl) {
-          const btn = {
-            type: 'button', text: extractText(b.accessory.text),
-            style: mapStyle(b.accessory.style),
-            action: { type: 'open_system_browser', value: btnUrl }
-          };
-          return [textBlock, btn];
-        }
-        warnings.push({ type: 'warn', msg: `section accessory 버튼 "${extractText(b.accessory.text)}"에 URL이 없어 제거됩니다.` });
-        return textBlock;
+        return [textBlock, slackButtonToKw(b.accessory, 'section accessory ')];
       }
       // plain section → text
       return { type: 'text', text: extractText(b.text) };
@@ -817,15 +804,7 @@ function convertBlock(b) {
       const buttons = [];
       for (const el of (b.elements || [])) {
         if (el.type === 'button') {
-          if (el.url) {
-            buttons.push({
-              type: 'button', text: extractText(el.text),
-              style: mapStyle(el.style),
-              action: { type: 'open_system_browser', value: el.url }
-            });
-          } else {
-            warnings.push({ type: 'warn', msg: `버튼 "${extractText(el.text)}"에 URL이 없습니다 (Slack 인터랙티브 전용). KW에서는 제거됩니다.` });
-          }
+          buttons.push(slackButtonToKw(el, ''));
         } else if (el.type === 'static_select' || el.type === 'external_select' || el.type?.includes('select')) {
           warnings.push({ type: 'warn', msg: `셀렉트 메뉴 "${extractText(el.placeholder)}"는 KW 메시지에서 지원되지 않아 제거됩니다.` });
         } else if (el.type === 'overflow') {
@@ -890,6 +869,53 @@ function mapStyle(slackStyle) {
   return 'default';
 }
 
+// ── Slack 버튼 → 카카오워크 button 블럭 ─────────────────────────
+// url 이 있으면 브라우저 열기, 없으면(= Slack 인터랙티브 전용 버튼) 서버 콜백인 submit_action 으로 보낸다.
+// 예전에는 url 없는 버튼을 통째로 버렸다. "KW 에 대응이 없다"는 전제였는데 틀렸다 —
+// submit_action 이 blockkit__buttonblock.md:98~102 에 실재한다.
+function slackButtonToKw(el, where) {
+  const text = extractText(el.text);
+  const style = mapStyle(el.style);
+  if (el.url) {
+    return { type: 'button', text, style, action: { type: 'open_system_browser', value: el.url } };
+  }
+
+  // submit_action 의 KW 필수 필드:
+  //   name  — blockkit__buttonblock.md:101 "submit_action 타입을 사용 시, 필수로 설정"
+  //   value — blockkit__buttonblock.md:102 "필수", 자유 포맷
+  // 그런데 Slack 쪽 action_id·value 는 둘 다 선택이라 비어 있을 수 있다.
+  // 빈 문자열로 내보내면 스펙 위반 JSON 이 나가므로 생성하고, 무엇을 생성했는지 반드시 고지한다.
+  const slug = String(text || '').trim().toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'action';
+
+  const made = [];
+  let name = String(el.action_id || '').trim();
+  if (!name) { name = slug; made.push('name'); }
+  if (usedActionNames.has(name)) {
+    let n = 2;
+    while (usedActionNames.has(`${name}_${n}`)) n++;
+    name = `${name}_${n}`;
+    made.push('name(중복 회피)');
+  }
+  usedActionNames.add(name);
+
+  // value 가 없으면 name 과 같은 값을 넣는다 — 콜백에서 버튼을 구분할 정보가 그것뿐이다.
+  let value = String(el.value ?? '').trim();
+  if (!value) { value = name; made.push('value'); }
+
+  warnings.push({ type: 'info', msg: `${where}버튼 "${text}"에 URL이 없어 submit_action(서버 콜백)으로 변환했습니다 → name="${name}", value="${value}".`
+    + (made.length ? ` Slack에 값이 없어 자동 생성한 항목: ${made.join('·')} (KW 스펙상 submit_action 은 name·value 가 필수).` : '')
+    + (made.includes('name') ? ` name 은 버튼 텍스트에서 만든 값이라 Slack 원본 텍스트를 고쳐 다시 변환하면 함께 바뀝니다. 수신 서버가 name 으로 분기한다면 Slack 쪽에 action_id 를 지정해 고정하세요.` : '') });
+
+  // 전제 조건 고지는 변환 1회당 1번만 (버튼마다 같은 문구를 반복하지 않는다)
+  if (!callbackNoticeDone) {
+    callbackNoticeDone = true;
+    warnings.push({ type: 'info', msg: 'submit_action 버튼은 Bot의 Callback URL 사전 등록 + 카카오워크 담당자 수동 검증이 필요합니다. 등록 전에는 문법이 맞아도 동작하지 않습니다. (JSON 출력·복사·전송은 그대로 가능합니다)' });
+  }
+
+  return { type: 'button', text, style, action: { type: 'submit_action', name, value } };
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CONVERT & RENDER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -922,12 +948,16 @@ function convert() {
     return;
   }
 
+  kwBlocks = convertBlocks(Array.isArray(slackBlocks) ? slackBlocks : []);
+
   // 최상위 text 필드 감지 (Slack fallback text)
+  // convertBlocks() 는 진입 즉시 warnings 를 비우므로 반드시 그 '뒤'에서 push 해야 한다.
+  // (앞에서 push 하면 리셋에 먹혀 이 고지가 한 번도 뜨지 않는다)
+  // 메시지 전체에 대한 고지라 블럭별 고지보다 위에 오도록 unshift 한다.
   if (parsed.text && parsed.blocks) {
-    warnings.push({ type: 'info', msg: `Slack fallback text "${parsed.text.substring(0, 50)}${parsed.text.length > 50 ? '...' : ''}" 는 변환에 포함되지 않습니다 (blocks만 변환).` });
+    warnings.unshift({ type: 'info', msg: `Slack fallback text "${parsed.text.substring(0, 50)}${parsed.text.length > 50 ? '...' : ''}" 는 변환에 포함되지 않습니다 (blocks만 변환).` });
   }
 
-  kwBlocks = convertBlocks(Array.isArray(slackBlocks) ? slackBlocks : []);
   renderAll();
   toast(`변환 완료! ${kwBlocks.length}개 블럭, ${warnings.length}개 경고`);
 }
