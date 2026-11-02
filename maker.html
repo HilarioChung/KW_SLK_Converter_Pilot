@@ -266,6 +266,7 @@
       box-shadow: 0 0 0 3px rgba(255,190,0,0.12);
     }
     .fta { resize: vertical; min-height: 58px; line-height: 1.5; }
+    .fta-sm { min-height: 42px; }
     .fc-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--kw-ink); }
     .fc-label input[type=checkbox] { accent-color: var(--kw-yellow); width: 14px; height: 14px; }
 
@@ -299,6 +300,19 @@
     .add-btn:hover { border-color: var(--kw-yellow); color: #888; background: #FFFDF0; }
 
     .hint { font-size: 11px; color: var(--kw-gray4); margin-top: 4px; }
+    .hint code { font-size: 10px; background: var(--kw-gray1); border: 1px solid var(--kw-border); border-radius: 3px; padding: 0 3px; color: #6E6E7A; }
+
+    .btn-xs.move:hover { background: var(--kw-navy-tint); color: var(--kw-navy); border-color: #c9d2ee; }
+    .inline-ctrls { display: flex; gap: 4px; }
+    .inline-add-row { display: flex; gap: 6px; }
+    .check-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    /* 콜백 계열 action.type 안내 — 문법이 맞아도 사전 등록 없이는 동작하지 않는다 */
+    .spec-note {
+      font-size: 11px; line-height: 1.55; color: #7A5A00;
+      background: var(--kw-yellow-light); border: 1px solid #F0D980;
+      border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;
+    }
+    .spec-note strong { color: #6B4E00; }
 
     /* ─── Validation Banner ─── */
     .val-wrap { padding: 0 12px 4px; }
@@ -310,6 +324,7 @@
     }
     .val-group-label.error-label { color: #7A1A1A; }
     .val-group-label.warn-label  { color: #6B5900; }
+    .val-group-label.info-label  { color: var(--kw-navy-text); }
     .val-item {
       display: flex; align-items: flex-start; gap: 6px;
       background: #FFF8E0;
@@ -327,6 +342,12 @@
       border-color: #F5C6C6;
       border-left-color: var(--kw-red);
       color: #7A1A1A;
+    }
+    .val-item.info {
+      background: var(--kw-navy-tint);
+      border-color: #C9D2EE;
+      border-left-color: var(--kw-blue);
+      color: var(--kw-navy-text);
     }
 
     /* ─── Right Panel ─── */
@@ -395,6 +416,14 @@
     .pv-header.yellow { background: var(--kw-yellow); color: var(--kw-dark); }
 
     .pv-text { padding: 11px 14px; font-size: 13px; line-height: 1.6; color: #222; word-break: break-word; }
+    .pv-styled.b { font-weight: 700; }
+    .pv-styled.i { font-style: italic; }
+    .pv-styled.s { text-decoration: line-through; }
+    .pv-styled.c-red  { color: #E03131; }
+    .pv-styled.c-blue { color: var(--kw-blue); }
+    .pv-styled.c-grey { color: var(--kw-gray4); }
+    .pv-inline-link { color: var(--kw-blue); text-decoration: underline; }
+    .pv-mention { color: var(--kw-navy); background: var(--kw-navy-tint); border-radius: 3px; padding: 0 2px; font-weight: 600; }
 
     .pv-image { width: 100%; aspect-ratio: 2/1; object-fit: cover; display: block; }
     .pv-image-ph {
@@ -983,10 +1012,51 @@ const IMAGE_PRESETS = [
 // 슬러그 → 현재 위치 기준 절대 URL. 템플릿이 프리셋 배너를 참조할 때 사용 (로컬·배포 양쪽 동작).
 const presetUrl = slug => new URL('assets/presets/' + slug + '.webp', document.baseURI).href;
 
+/* ─── 버튼 action.type ─── */
+// 공식 문서(Button Block > Compatibility Action) 기준 5종. value 는 전 타입 필수.
+//   url      : open_system_browser · open_inapp_browser → http/https URL
+//   scheme   : open_external_app → 커스텀 앱 스킴 (http/https 아님)
+//   callback : submit_action · call_modal → 콜백으로 되돌려받는 임의 문자열
+const ACTION_TYPES = [
+  { key:'open_system_browser', label:'시스템 브라우저로 열기',  kind:'url' },
+  { key:'open_inapp_browser',  label:'인앱 브라우저로 열기',    kind:'url' },
+  { key:'open_external_app',   label:'외부 앱 실행 (앱 스킴)',  kind:'scheme' },
+  { key:'submit_action',       label:'액션 전송 (서버 콜백)',   kind:'callback' },
+  { key:'call_modal',          label:'모달 호출 (서버 콜백)',   kind:'callback' },
+];
+const ACTION_TYPE_MAP    = Object.fromEntries(ACTION_TYPES.map(a => [a.key, a]));
+const DEFAULT_ACTION_TYPE = 'open_system_browser';
+// 미지정·미지원 값은 현행 기본값으로 수렴 (구버전 블럭·템플릿 호환)
+const actionType = a => (ACTION_TYPE_MAP[a && a.type] ? a.type : DEFAULT_ACTION_TYPE);
+const actionKind = t => (ACTION_TYPE_MAP[t] || ACTION_TYPE_MAP[DEFAULT_ACTION_TYPE]).kind;
+// 콜백 계열이 요구하는 Bot URL 은 타입별로 다르다 — 공문이 두 URL 을 구분한다.
+//   call_modal    → Request URL  (Modal 블록 구성을 호출하는 URL)
+//   submit_action → Callback URL (선택한 버튼 정보를 POST 로 보내는 URL)
+const CALLBACK_URL_NAME = { call_modal:'Request URL', submit_action:'Callback URL' };
+
+/* ─── Text Block inlines ─── */
+// 공식 문서: inlines 는 styled · link · mention 3종, styled 의 color 는 4종 고정값.
+const INLINE_META = {
+  styled:  { name: '서식 (styled)' },
+  link:    { name: '링크 (link)' },
+  mention: { name: '멘션 (mention)' },
+};
+const INLINE_COLORS = [['default','기본 (검정)'],['red','빨강'],['blue','파랑'],['grey','회색']];
+function makeInline(kind) {
+  switch (kind) {
+    case 'styled':  return { type:'styled', text:'서식 텍스트', bold:false, italic:false, strike:false, color:'default' };
+    case 'link':    return { type:'link', text:'링크 텍스트', url:'https://example.com' };
+    case 'mention': return { type:'mention', text:'@이름', ref:{ type:'kw', value:'' } };
+    default: console.warn(`makeInline: unknown inline kind "${kind}"`); return null;
+  }
+}
+// 스펙: 상위 text 는 inlines 하위 text 를 이어붙인 값과 같아야 한다 (다르면 inlines 가 우선 표시됨)
+const inlinesText = inlines => (inlines || []).map(n => (n && n.text) || '').join('');
+
 function makeDefault(type) {
   switch (type) {
     case 'header':      return { type:'header', text:'헤더 제목을 입력하세요', style:'blue' };
-    case 'text':        return { type:'text', text:'텍스트 내용을 입력하세요.' };
+    case 'text':        return { type:'text', text:'텍스트 내용을 입력하세요.', inlines:[] };
     case 'image_link':        return { type:'image_link', _src:'url',    url:'' };
     case 'image_link_ai':     return { type:'image_link', _src:'ai',     url:'', _preview:'' };
     case 'image_link_upload': return { type:'image_link', _src:'upload', url:'', _preview:'' };
@@ -1027,6 +1097,87 @@ function clearAll() {
   if (blocks.length && !confirm('모든 블럭을 초기화할까요?')) return;
   blocks = [];
   syncAll();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INLINES CRUD (structural → syncAll)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addInline(idx, kind) {
+  const b = blocks[idx], node = makeInline(kind);
+  if (!b || !node) return;
+  if (!Array.isArray(b.inlines)) b.inlines = [];
+  // 첫 조각을 추가하는 순간부터 상위 text 는 조각 연결값으로 덮어써진다(스펙 요건).
+  // 그래서 본문을 먼저 조각 쪽으로 옮겨야 소실되지 않는다.
+  //   styled        → 본문을 그 조각의 텍스트로 승격 (조각 1개, 본문 그대로)
+  //   link·mention  → 조각이 자기 표시 텍스트를 가져야 하므로 본문을 앞단 styled 조각으로 분리
+  if (b.inlines.length === 0 && b.text) {
+    if (kind === 'styled') {
+      node.text = b.text;
+    } else {
+      const carry = makeInline('styled');
+      carry.text = b.text;
+      b.inlines.push(carry);
+    }
+  }
+  b.inlines.push(node);
+  syncInlineText(idx);
+  syncAll();
+}
+function removeInline(idx, ii) {
+  const b = blocks[idx];
+  if (!b || !Array.isArray(b.inlines)) return;
+  b.inlines.splice(ii, 1);
+  syncInlineText(idx);
+  syncAll();
+}
+function moveInline(idx, ii, dir) {
+  const arr = blocks[idx] && blocks[idx].inlines;
+  if (!arr) return;
+  const n = ii + dir;
+  if (n < 0 || n >= arr.length) return;
+  [arr[ii], arr[n]] = [arr[n], arr[ii]];
+  syncInlineText(idx);
+  syncAll();
+}
+// inlines 가 하나라도 있으면 상위 text 는 조각 텍스트의 연결값으로 고정 (스펙 정합성 요건)
+function syncInlineText(idx) {
+  const b = blocks[idx];
+  if (!b || !Array.isArray(b.inlines) || b.inlines.length === 0) return;
+  b.text = inlinesText(b.inlines);
+}
+
+// 폼 입력 핸들러 — renderEditor() 를 부르지 않고 상위 text 미러만 직접 갱신해 포커스를 지킨다
+function setInlineField(idx, ii, field, value) {
+  const node = blocks[idx] && blocks[idx].inlines && blocks[idx].inlines[ii];
+  if (!node) return;
+  node[field] = value;
+  if (field === 'text') {
+    syncInlineText(idx);
+    const mirror = document.getElementById('textMirror_' + idx);
+    if (mirror) mirror.value = blocks[idx].text;
+  }
+  updateOutput();
+}
+function setMentionRef(idx, ii, value) {
+  const node = blocks[idx] && blocks[idx].inlines && blocks[idx].inlines[ii];
+  if (!node) return;
+  if (!node.ref || node.ref.type !== 'kw') node.ref = { type:'kw', value:'' };
+  node.ref.value = value;   // 숫자 검사는 validate() 에서 — 입력 중 값 가공은 커서를 깨뜨린다
+  updateOutput();
+}
+
+// action.type 은 입력 필드 구성 자체를 바꾸므로 구조 변경 → syncAll
+function setActionType(btn, type) {
+  if (!btn) return;
+  if (!btn.action) btn.action = {};
+  btn.action.type = ACTION_TYPE_MAP[type] ? type : DEFAULT_ACTION_TYPE;
+  syncAll();
+}
+function setActionField(btn, field, value) {
+  if (!btn) return;
+  if (!btn.action) btn.action = { type: DEFAULT_ACTION_TYPE };
+  btn.action[field] = value;
+  updateOutput();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1109,13 +1260,29 @@ function buildForm(b, i) {
         </div>
       </div>`;
 
-    case 'text': return `
+    case 'text': {
+      const inlines = Array.isArray(b.inlines) ? b.inlines : [];
+      const hasInlines = inlines.length > 0;
+      return `
       <div class="fg">
         <label class="fl">텍스트 내용 <span style="color:#bbb;font-weight:400">(최대 500자)</span></label>
-        <textarea class="fta" maxlength="500"
+        <textarea class="fta" maxlength="500" id="textMirror_${i}" ${hasInlines ? 'readonly' : ''}
           oninput="blocks[${i}].text=this.value;updateOutput()">${eh(b.text)}</textarea>
-        <div class="hint">줄바꿈(Enter)이 그대로 미리보기에 반영됩니다.</div>
+        <div class="hint">${hasInlines
+          ? '서식 조각이 있으므로 이 값은 조각 텍스트를 이어붙인 결과로 자동 동기화됩니다 (스펙: 상위 text 와 inlines 의 text 는 동일해야 함).'
+          : '줄바꿈(Enter)이 그대로 미리보기에 반영됩니다.'}</div>
+      </div>
+      <div class="fg">
+        <label class="fl">서식 조각 (inlines) <span style="color:#bbb;font-weight:400">(선택)</span></label>
+        ${inlines.map((n, ii) => buildInlineForm(n, i, ii, inlines.length)).join('')}
+        <div class="inline-add-row">
+          <button class="add-btn" onclick="addInline(${i},'styled')">+ 서식</button>
+          <button class="add-btn" onclick="addInline(${i},'link')">+ 링크</button>
+          <button class="add-btn" onclick="addInline(${i},'mention')">+ 멘션</button>
+        </div>
+        <div class="hint">조각을 추가하지 않으면 Plain Text 로 전송됩니다. Plain Text 는 링크 자동 변환을 지원하지 않으므로, 링크는 링크 조각으로 넣으세요.</div>
       </div>`;
+    }
 
     case 'image_link': {
       if (b._src === 'ai') return `
@@ -1207,11 +1374,7 @@ function buildForm(b, i) {
           <option value="danger"  ${b.style==='danger' ?'selected':''}>위험 (빨간색)</option>
         </select>
       </div>
-      <div class="fg">
-        <label class="fl">링크 URL</label>
-        <input class="fi" type="url" value="${eh(b.action?.value||'')}" placeholder="https://example.com"
-          oninput="if(!blocks[${i}].action)blocks[${i}].action={type:'open_system_browser'};blocks[${i}].action.value=this.value;updateOutput()">
-      </div>`;
+      ${buildActionForm(b, `blocks[${i}]`)}`;
 
     case 'action': {
       const elems = b.elements || [];
@@ -1235,11 +1398,7 @@ function buildForm(b, i) {
                 <option value="danger"  ${el.style==='danger' ?'selected':''}>위험</option>
               </select>
             </div>
-            <div class="fg">
-              <label class="fl">링크 URL</label>
-              <input class="fi" type="url" value="${eh(el.action?.value||'')}" placeholder="https://example.com"
-                oninput="if(!blocks[${i}].elements[${bi}].action)blocks[${i}].elements[${bi}].action={type:'open_system_browser'};blocks[${i}].elements[${bi}].action.value=this.value;updateOutput()">
-            </div>
+            ${buildActionForm(el, `blocks[${i}].elements[${bi}]`)}
           </div>
         `).join('')}
         ${elems.length < 3 ? `<button class="add-btn" onclick="blocks[${i}].elements.push({type:'button',text:'버튼',style:'default',action:{type:'open_system_browser',value:'https://example.com'}});syncAll()">+ 버튼 추가 (최대 3개)</button>` : ''}`;
@@ -1287,6 +1446,114 @@ function buildForm(b, i) {
       </div>`;
 
     default: return '<div style="color:#bbb;font-size:12px">미지원 블럭</div>';
+  }
+}
+
+// 버튼 action 편집 폼 — Button 블럭과 Action 블럭 엘리먼트가 공유한다.
+// path 는 해당 버튼 객체에 도달하는 전역 식 문자열 (예: "blocks[0]", "blocks[0].elements[1]").
+// action.type 변경만 구조 변경(필드 구성이 바뀜)이라 syncAll, 나머지는 updateOutput.
+function buildActionForm(btn, path) {
+  const t = actionType(btn.action), kind = actionKind(t);
+  const label = kind === 'url' ? '링크 URL' : kind === 'scheme' ? '앱 스킴 (value)' : '콜백으로 전달할 값 (value)';
+  const ph = kind === 'url' ? 'https://example.com' : kind === 'scheme' ? 'myapp://open?id=123' : '예: approve_123';
+  const hint = kind === 'url'
+    ? 'http 또는 https URL 이어야 합니다.'
+    : kind === 'scheme'
+      ? '커스텀 앱 스킴을 호출합니다 (http/https 가 아니어도 됩니다). 사용자 기기에 해당 앱이 없으면 동작하지 않습니다.'
+      : '자유 포맷 문자열입니다 (Query Parameter · String Encoded JSON 등). 콜백으로 그대로 되돌려받습니다.';
+  return `
+      <div class="fg">
+        <label class="fl">동작 타입 (action.type)</label>
+        <select class="fs" onchange="setActionType(${path}, this.value)">
+          ${ACTION_TYPES.map(a => `<option value="${a.key}" ${t === a.key ? 'selected' : ''}>${a.label} — ${a.key}</option>`).join('')}
+        </select>
+      </div>
+      ${kind !== 'callback' ? '' : `
+      <div class="spec-note">
+        <strong>사전 준비 필요</strong> — ${t} 은 Bot 의 <strong>${CALLBACK_URL_NAME[t]}</strong> 사전 등록 + 카카오워크 담당자 수동 검증이 필요합니다.
+        등록 전에는 문법이 맞아도 버튼이 동작하지 않습니다. JSON 출력·복사는 그대로 가능합니다.
+      </div>
+      <div class="fg">
+        <label class="fl">액션 이름 (name)
+          ${t === 'submit_action'
+            ? '<span style="color:#f5a623;font-weight:400">(submit_action 은 필수)</span>'
+            : '<span style="color:#bbb;font-weight:400">(선택)</span>'}
+        </label>
+        <input class="fi" value="${eh(btn.action?.name || '')}" placeholder="예: approve_btn"
+          oninput="setActionField(${path}, 'name', this.value)">
+        <div class="hint">여러 버튼 중 어느 버튼이 눌렸는지 서버가 구분하는 값입니다.</div>
+      </div>`}
+      <div class="fg">
+        <label class="fl">${label}</label>
+        <input class="fi" type="${kind === 'url' ? 'url' : 'text'}" value="${eh(btn.action?.value || '')}" placeholder="${ph}"
+          oninput="setActionField(${path}, 'value', this.value)">
+        <div class="hint">${hint}</div>
+      </div>`;
+}
+
+// Text 블럭 inlines 조각 1개 편집 폼 (styled / link / mention)
+function buildInlineForm(n, i, ii, total) {
+  const head = `
+          <div class="sub-header">
+            ${(INLINE_META[n.type] || { name: n.type }).name} ${ii + 1}
+            <span class="inline-ctrls">
+              ${ii > 0 ? `<button class="btn-xs move" onclick="moveInline(${i},${ii},-1)" title="위로">↑</button>` : ''}
+              ${ii < total - 1 ? `<button class="btn-xs move" onclick="moveInline(${i},${ii},1)" title="아래로">↓</button>` : ''}
+              <button class="btn-xs" onclick="removeInline(${i},${ii})">삭제</button>
+            </span>
+          </div>`;
+  // 스펙: Plain Text 와 Inlines 모두 줄 넘김(\n)을 지원하므로 단일행 input 이 아니라 textarea 다.
+  // setInlineField 는 renderEditor() 를 부르지 않고 상위 미러만 갱신하므로 캐럿이 유지된다.
+  const textField = `
+          <div class="fg">
+            <label class="fl">텍스트 <span style="color:#bbb;font-weight:400">(줄바꿈 가능)</span></label>
+            <textarea class="fta fta-sm"
+              oninput="setInlineField(${i},${ii},'text',this.value)">${eh(n.text)}</textarea>
+          </div>`;
+  switch (n.type) {
+
+    case 'styled': return `
+        <div class="sub-block">${head}${textField}
+          <div class="fg check-row">
+            <label class="fc-label"><input type="checkbox" ${n.bold ? 'checked' : ''}
+              onchange="setInlineField(${i},${ii},'bold',this.checked)"> 굵게</label>
+            <label class="fc-label"><input type="checkbox" ${n.italic ? 'checked' : ''}
+              onchange="setInlineField(${i},${ii},'italic',this.checked)"> 기울임</label>
+            <label class="fc-label"><input type="checkbox" ${n.strike ? 'checked' : ''}
+              onchange="setInlineField(${i},${ii},'strike',this.checked)"> 취소선</label>
+          </div>
+          <div class="fg">
+            <label class="fl">글자 색상</label>
+            <select class="fs" onchange="setInlineField(${i},${ii},'color',this.value)">
+              ${INLINE_COLORS.map(([k, l]) => `<option value="${k}" ${(n.color || 'default') === k ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+            <div class="hint">폰트 종류·크기 설정은 스펙상 지원하지 않습니다.</div>
+          </div>
+        </div>`;
+
+    case 'link': return `
+        <div class="sub-block">${head}${textField}
+          <div class="fg">
+            <label class="fl">링크 주소</label>
+            <input class="fi" value="${eh(n.url || '')}" placeholder="https://example.com"
+              oninput="setInlineField(${i},${ii},'url',this.value)">
+            <div class="hint">http · https 외에 mailto: · tel: 도 사용할 수 있습니다. 링크 조각에는 굵게·기울임·취소선·색상을 적용할 수 없습니다 (스펙).</div>
+          </div>
+        </div>`;
+
+    case 'mention': return `
+        <div class="sub-block">${head}${textField}
+          <div class="fg">
+            <label class="fl">멘션할 사용자 user_id</label>
+            <input class="fi" inputmode="numeric" value="${eh(n.ref?.value ?? '')}" placeholder="예: 1234567"
+              oninput="setMentionRef(${i},${ii},this.value)">
+            <div class="hint">멤버 고유 정보인 숫자 user_id 입니다. 해당 채팅방에 멘션 대상이 참여 중일 때만 동작합니다.
+              <br>전체 멘션: <code>text</code> 필드의 폴백 멘션 문법에서는 <code>[@all](USER_ID:0)</code> 로 0 을 쓰지만,
+              <code>inlines.mention</code> 문서에는 0 에 대한 명시가 없습니다 (같은 user_id 공간이라는 추론일 뿐 미확인).</div>
+          </div>
+        </div>`;
+
+    default: return '';
   }
 }
 
@@ -1436,16 +1703,55 @@ function validate() {
       warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 그룹(Action)에는 최대 3개의 버튼만 허용됩니다.` });
   });
 
-  // 버튼/액션 링크 URL 필수 — open_system_browser/open_inapp_browser는 URL 필수 (빈/무효 시 죽은 버튼·전송 실패)
+  // 버튼 action — value 는 전 타입 필수이고, 요구 형식만 타입별로 다르다.
+  //   url      : open_system_browser · open_inapp_browser → http/https 필수
+  //   scheme   : open_external_app → 커스텀 앱 스킴이므로 http/https 를 요구하지 않는다
+  //   callback : submit_action · call_modal → 임의 문자열 허용 (submit_action 은 name 필수)
+  const checkAction = (btn, where) => {
+    const t = actionType(btn?.action), kind = actionKind(t);
+    const val = String(btn?.action?.value ?? '').trim();
+    if (kind === 'url' && !safeUrl(val))
+      warnings.push({ level:'error', msg:`${where} 링크 URL이 비어있거나 유효하지 않습니다 (http/https 필수).` });
+    if (kind !== 'url' && !val)
+      warnings.push({ level:'error', msg:`${where} value가 비어있습니다 (${t} 에서도 value는 필수 항목입니다).` });
+    if (t === 'submit_action' && !String(btn?.action?.name ?? '').trim())
+      warnings.push({ level:'error', msg:`${where} submit_action 사용 시 name은 필수 항목입니다.` });
+    // 아래 3건은 스펙 위반도 UX 권고도 아닌 '사실 고지'라 level:'info' 다 (전송을 막지 않는다)
+    if (kind === 'callback')
+      warnings.push({ level:'info', msg:`${where} ${t} 은 Bot의 ${CALLBACK_URL_NAME[t]} 사전 등록 + 카카오워크 담당자 수동 검증이 필요합니다. 등록 전에는 문법이 맞아도 동작하지 않습니다.` });
+    // http/https 를 요구하지 않는 타입들은 값을 세탁하지 않고 원문을 보낸다 → 오타·위험 스킴을 고지만 한다 (차단 아님)
+    if (kind === 'scheme' && /^https?:\/\//i.test(val))
+      warnings.push({ level:'info', msg:`${where} value가 http(s) URL입니다. 브라우저로 열려면 open_system_browser · open_inapp_browser가 맞습니다 (open_external_app은 커스텀 앱 스킴용).` });
+    if (kind !== 'url' && /^(javascript|data|vbscript):/i.test(val))
+      warnings.push({ level:'info', msg:`${where} value가 실행 가능 스킴(${val.split(':')[0].toLowerCase()}:)으로 시작합니다. 이 타입은 값을 세탁하지 않고 출력 JSON에 원문을 그대로 싣습니다. 의도한 값인지 확인하세요.` });
+  };
   blocks.forEach((b, i) => {
-    if (b.type === 'button' && !safeUrl(b.action?.value))
-      warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼(Button)의 링크 URL이 비어있거나 유효하지 않습니다 (http/https 필수).` });
-    if (b.type === 'action') {
-      (b.elements||[]).forEach((el, j) => {
-        if (!safeUrl(el.action?.value))
-          warnings.push({ level:'error', msg:`블럭 ${i+1}: 버튼 그룹(Action)의 ${j+1}번째 버튼 링크 URL이 비어있거나 유효하지 않습니다 (http/https 필수).` });
-      });
-    }
+    if (b.type === 'button') checkAction(b, `블럭 ${i+1}: 버튼(Button)의`);
+    if (b.type === 'action')
+      (b.elements||[]).forEach((el, j) => checkAction(el, `블럭 ${i+1}: 버튼 그룹(Action) ${j+1}번째 버튼의`));
+  });
+
+  // Text 블럭 inlines — 조각별 필수 속성
+  blocks.forEach((b, i) => {
+    if (b.type !== 'text' || !Array.isArray(b.inlines) || b.inlines.length === 0) return;
+    b.inlines.forEach((n, ii) => {
+      const where = `블럭 ${i+1}: 서식 조각 ${ii+1}(${n?.type || '?'})`;
+      if (!String(n?.text ?? '').length)
+        warnings.push({ level:'error', msg:`${where}: 텍스트는 필수 항목입니다.` });
+      if (n?.type === 'link' && !safeInlineUrl(n.url))
+        warnings.push({ level:'error', msg:`${where}: 링크 주소가 비어있거나 지원하지 않는 형식입니다 (http · https · mailto: · tel:).` });
+      if (n?.type === 'mention') {
+        const uid = String(n.ref?.value ?? '').trim();
+        if (!/^\d+$/.test(uid))
+          warnings.push({ level:'error', msg:`${where}: 멘션 user_id는 숫자여야 합니다.` });
+        // 자릿수 상한은 공개 문서에 근거가 없어 '검증불가'로 둔다. 다만 안전 정수를 넘으면
+        // Integer 직렬화에서 값이 조용히 변조되므로(12345678901234567890 → ...567000) 그것만 막는다.
+        else if (!Number.isSafeInteger(Number(uid)))
+          warnings.push({ level:'error', msg:`${where}: 멘션 user_id가 안전 정수 범위를 넘습니다. Integer로 직렬화하면 값이 변조되므로 그대로 전송할 수 없습니다.` });
+      }
+    });
+    if (b.text !== inlinesText(b.inlines))
+      warnings.push({ level:'info', msg:`블럭 ${i+1}: 상위 text와 서식 조각 텍스트의 연결값이 다릅니다. 카카오워크는 inlines의 text를 우선 표시합니다.` });
   });
 
   // ── 글자수 제한 (스펙 위반) ──────────────────────
@@ -1485,8 +1791,10 @@ function renderValidation() {
   const items = validate();
   if (items.length === 0) { wrap.innerHTML = ''; return; }
 
+  // error = 스펙 위반(전송 차단) / warn = UX 권고 / info = 사실 고지 (전송 차단 아님)
   const errors = items.filter(w => w.level === 'error');
   const warns  = items.filter(w => w.level === 'warn');
+  const infos  = items.filter(w => w.level === 'info');
 
   let html = '';
   if (errors.length > 0) {
@@ -1496,6 +1804,10 @@ function renderValidation() {
   if (warns.length > 0) {
     html += `<div class="val-group-label warn-label">⚠️ 권장하지 않음 — 전송은 되지만 UX 품질이 저하될 수 있습니다</div>`;
     html += warns.map(w => `<div class="val-item"><span>${eh(w.msg)}</span></div>`).join('');
+  }
+  if (infos.length > 0) {
+    html += `<div class="val-group-label info-label">ℹ️ 안내 — 전송 전 확인이 필요한 항목입니다 (스펙 위반 아님)</div>`;
+    html += infos.map(w => `<div class="val-item info"><span>${eh(w.msg)}</span></div>`).join('');
   }
   wrap.innerHTML = html;
 }
@@ -1512,12 +1824,34 @@ function renderPreview() {
   bubble.innerHTML = blocks.map(renderBlock).join('');
 }
 
+// inlines 가 있으면 조각 단위로, 없으면 Plain Text 로 렌더
+function renderTextContent(b) {
+  const inlines = Array.isArray(b.inlines) ? b.inlines : [];
+  if (inlines.length === 0) return eh(b.text).replace(/\n/g,'<br>');
+  return inlines.map(n => {
+    const txt = eh(n?.text || '').replace(/\n/g,'<br>');
+    if (n?.type === 'link') {
+      const u = safeInlineUrl(n.url);
+      return u
+        ? `<a class="pv-inline-link" href="${eh(u)}" target="_blank" rel="noopener noreferrer">${txt}</a>`
+        : `<span class="pv-inline-link">${txt}</span>`;
+    }
+    if (n?.type === 'mention') return `<span class="pv-mention">${txt}</span>`;
+    const cls = ['pv-styled'];
+    if (n?.bold)   cls.push('b');
+    if (n?.italic) cls.push('i');
+    if (n?.strike) cls.push('s');
+    if (n?.color && n.color !== 'default') cls.push('c-' + n.color);
+    return `<span class="${cls.join(' ')}">${txt}</span>`;
+  }).join('');
+}
+
 function renderBlock(b) {
   switch (b.type) {
     case 'header':
       return `<div class="pv-header ${b.style||'white'}">${eh(b.text)}</div>`;
     case 'text':
-      return `<div class="pv-text">${eh(b.text).replace(/\n/g,'<br>')}</div>`;
+      return `<div class="pv-text">${renderTextContent(b)}</div>`;
     case 'image_link': {
       const imgSrc = safeUrl(b._preview || b.url);
       return imgSrc
@@ -1574,14 +1908,54 @@ function renderJSON() {
   document.getElementById('jsonOut').value = JSON.stringify(payload, null, 2);
 }
 
+// 버튼 action 직렬화 — safeUrl 세탁은 URL 계열에만. 앱 스킴·콜백 value 는 원문을 보낸다.
+// name 은 콜백 계열에서만 의미가 있어 그 경우에만 포함한다.
+function cleanAction(a) {
+  const t = actionType(a), kind = actionKind(t);
+  const out = { type:t };
+  if (kind === 'callback' && a?.name) out.name = a.name;
+  out.value = kind === 'url' ? safeUrl(a?.value) : String(a?.value ?? '');
+  return out;
+}
+
+// inlines 조각 직렬화 — 기본값(false·default)은 생략해 payload 를 줄인다.
+function cleanInline(n) {
+  switch (n?.type) {
+    case 'styled': {
+      const out = { type:'styled', text:n.text||'' };
+      if (n.bold)   out.bold = true;
+      if (n.italic) out.italic = true;
+      if (n.strike) out.strike = true;
+      if (n.color && n.color !== 'default') out.color = n.color;
+      return out;
+    }
+    case 'link': return { type:'link', text:n.text||'', url:safeInlineUrl(n.url) };
+    case 'mention': {
+      // ref.value 는 Integer(user_id). 숫자가 아니면 원문을 그대로 남겨 JSON 에서 바로 보이게 한다
+      // (validate() 가 오류로 표시하며, 0 으로 뭉개면 전체 멘션으로 조용히 바뀐다).
+      const v = String(n.ref?.value ?? '').trim();
+      const num = /^\d+$/.test(v) ? Number(v) : NaN;
+      return { type:'mention', text:n.text||'', ref:{ type:'kw', value: Number.isSafeInteger(num) ? num : v } };
+    }
+    default: return null;
+  }
+}
+
 function cleanBlock(b) {
   switch (b.type) {
     case 'header':      return { type:'header', text:b.text, style:b.style };
-    case 'text':        return { type:'text', text:b.text };
+    case 'text': {
+      // 스펙: text 는 필수이고 inlines 는 선택. 둘은 배타가 아니라 병존하며,
+      // 상위 text 는 inlines 하위 text 의 연결값과 동일해야 한다 (syncInlineText 가 보장).
+      const out = { type:'text', text:b.text };
+      const inlines = (Array.isArray(b.inlines) ? b.inlines : []).map(cleanInline).filter(Boolean);
+      if (inlines.length > 0) out.inlines = inlines;
+      return out;
+    }
     case 'image_link':  return { type:'image_link', url: safeUrl(b.url) };
     case 'divider':     return { type:'divider' };
-    case 'button':      return { type:'button', text:b.text, style:b.style, action:{ type:b.action?.type||'open_system_browser', value:safeUrl(b.action?.value) } };
-    case 'action':      return { type:'action', elements:(b.elements||[]).map(el=>({ type:'button', text:el.text, style:el.style, action:{ type:el.action?.type||'open_system_browser', value:safeUrl(el.action?.value) } })) };
+    case 'button':      return { type:'button', text:b.text, style:b.style, action:cleanAction(b.action) };
+    case 'action':      return { type:'action', elements:(b.elements||[]).map(el=>({ type:'button', text:el.text, style:el.style, action:cleanAction(el.action) })) };
     case 'description': return { type:'description', term:b.term, accent:b.accent, content:{ type:'text', text:b.content?.text||'' } };
     case 'section': {
       const out = { type:'section', content:{ type:'text', text:b.content?.text||'' } };
@@ -1910,6 +2284,14 @@ function eh(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// inline link 전용 — 공식 문서가 http·https 외에 mailto:·tel: 도 허용한다
+function safeInlineUrl(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    return ['http:','https:','mailto:','tel:'].includes(u.protocol) ? url : '';
+  } catch { return ''; }
 }
 // http(s): 스킴만 허용 — javascript:, data: 등 차단
 function safeUrl(url) {
